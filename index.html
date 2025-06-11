@@ -892,7 +892,7 @@
                 const hoursWorked = ((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2);
                 
                 // Update entry with checkout
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabaseClient
                     .from('time_entries')
                     .update({
                         check_out_time: now,
