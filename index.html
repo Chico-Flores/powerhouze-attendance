@@ -1004,7 +1004,7 @@
                 if (timeError) throw timeError;
                 
                 // Get all absences for today
-                const { data: absences, error: absenceError } = await supabaseClientClient
+                const { data: absences, error: absenceError } = await supabaseClient
                     .from('absences')
                     .select(`
                         *,
