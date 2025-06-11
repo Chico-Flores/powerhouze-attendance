@@ -993,7 +993,7 @@
                 const today = new Date().toISOString().split('T')[0];
                 
                 // Get all time entries for today
-                const { data: timeEntries, error: timeError } = await supabaseClientClient
+                const { data: timeEntries, error: timeError } = await supabaseClient
                     .from('time_entries')
                     .select(`
                         *,
