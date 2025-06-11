@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Powerhouze Attendance Tracker</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.3/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -600,7 +600,8 @@
         const SUPABASE_URL = 'https://fuomyeqafubwcjcsvmiw.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1b215ZXFhZnVid2NqY3N2bWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2NjYyMTMsImV4cCI6MjA2NTI0MjIxM30.ZD0bKlXCxeMtTI3PWSHMqcx0HU5Gp57gyFrzdb1bUzc';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
         let currentUserId = null;
@@ -665,7 +666,7 @@
 
         async function loadEmployees() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('employees')
                     .select('*')
                     .order('name');
@@ -741,7 +742,7 @@
                 
                 // Verify management password
                 try {
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('app_config')
                         .select('value')
                         .eq('key', 'management_password')
@@ -765,12 +766,12 @@
             currentRole = selectedEmployee.role;
             
             // Set user context for RLS
-            await supabase.rpc('set_config', {
+            await supabaseClient.rpc('set_config', {
                 setting_name: 'app.current_user',
                 setting_value: currentUser
             });
             
-            await supabase.rpc('set_config', {
+            await supabaseClient.rpc('set_config', {
                 setting_name: 'app.user_role', 
                 setting_value: currentRole
             });
@@ -814,7 +815,7 @@
                 const now = new Date().toISOString();
                 
                 // Check for existing entry today
-                let { data: existingEntry, error: fetchError } = await supabase
+                let { data: existingEntry, error: fetchError } = await supabaseClient
                     .from('time_entries')
                     .select('*')
                     .eq('employee_id', currentUserId)
@@ -827,7 +828,7 @@
                 
                 if (existingEntry) {
                     // Update existing entry
-                    const { error: updateError } = await supabase
+                    const { error: updateError } = await supabaseClientClient
                         .from('time_entries')
                         .update({
                             check_in_time: now,
@@ -841,7 +842,7 @@
                     if (updateError) throw updateError;
                 } else {
                     // Create new entry
-                    const { error: insertError } = await supabase
+                    const { error: insertError } = await supabaseClient
                         .from('time_entries')
                         .insert({
                             employee_id: currentUserId,
@@ -871,7 +872,7 @@
                 const now = new Date().toISOString();
                 
                 // Get today's entry
-                const { data: entry, error: fetchError } = await supabase
+                const { data: entry, error: fetchError } = await supabaseClient
                     .from('time_entries')
                     .select('*')
                     .eq('employee_id', currentUserId)
@@ -919,7 +920,7 @@
             try {
                 const today = new Date().toISOString().split('T')[0];
                 
-                const { data: entry, error } = await supabase
+                const { data: entry, error } = await supabaseClient
                     .from('time_entries')
                     .select('*')
                     .eq('employee_id', currentUserId)
@@ -992,7 +993,7 @@
                 const today = new Date().toISOString().split('T')[0];
                 
                 // Get all time entries for today
-                const { data: timeEntries, error: timeError } = await supabase
+                const { data: timeEntries, error: timeError } = await supabaseClientClient
                     .from('time_entries')
                     .select(`
                         *,
@@ -1003,7 +1004,7 @@
                 if (timeError) throw timeError;
                 
                 // Get all absences for today
-                const { data: absences, error: absenceError } = await supabase
+                const { data: absences, error: absenceError } = await supabaseClientClient
                     .from('absences')
                     .select(`
                         *,
@@ -1153,7 +1154,7 @@
             }
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClientClientClient
                     .from('absences')
                     .upsert({
                         employee_id: parseInt(employeeId),
@@ -1183,7 +1184,7 @@
 
         async function loadExistingAbsences() {
             try {
-                const { data: absences, error } = await supabase
+                const { data: absences, error } = await supabaseClientClient
                     .from('absences')
                     .select(`
                         *,
@@ -1477,7 +1478,7 @@
             const filterEmployeeId = document.getElementById('absence-filter-employee').value;
             
             try {
-                let query = supabase
+                let query = supabaseClient
                     .from('absences')
                     .select(`
                         *,
@@ -1607,7 +1608,7 @@
                 const today = new Date().toISOString().split('T')[0];
                 
                 // Get all employees still checked in
-                const { data: openEntries, error } = await supabase
+                const { data: openEntries, error } = await supabaseClient
                     .from('time_entries')
                     .select('*')
                     .eq('date', today)
@@ -1625,7 +1626,7 @@
                         const checkOutTime = new Date(autoCheckOutTime);
                         const hoursWorked = ((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2);
                         
-                        await supabase
+                        await supabaseClient
                             .from('time_entries')
                             .update({
                                 check_out_time: autoCheckOutTime,
