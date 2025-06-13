@@ -875,6 +875,26 @@
         async function checkIn() {
             if (!currentUserId) return;
             
+            // Check if current time is within allowed hours and days (Mon-Fri, 7 AM - 4 PM PST)
+            const nowPST = new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"});
+            const pstTime = new Date(nowPST);
+            const hours = pstTime.getHours();
+            const dayOfWeek = pstTime.getDay(); // 0 = Sunday, 6 = Saturday
+            
+            // Check for weekend
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                const dayName = dayOfWeek === 0 ? "Sunday" : "Saturday";
+                alert(`🚫 No weekend work allowed!\nYou cannot check in on ${dayName}. Enjoy your time off!\n\nNext available check-in: Monday at 7:00 AM PST`);
+                return;
+            }
+            
+            // Check for valid hours (7 AM - 4 PM PST)
+            if (hours < 7 || hours >= 16) {
+                const nextOpenTime = hours < 7 ? "7:00 AM PST" : "7:00 AM PST tomorrow";
+                alert(`⏰ Check-in is only allowed between 7:00 AM and 4:00 PM PST.\nNext available check-in time: ${nextOpenTime}`);
+                return;
+            }
+            
             try {
                 const today = new Date().toISOString().split('T')[0];
                 const now = new Date().toISOString();
