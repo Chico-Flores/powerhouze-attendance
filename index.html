@@ -293,6 +293,24 @@
             margin-bottom: 20px;
         }
 
+        .session-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .session-info h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .session-info p {
+            margin: 5px 0;
+            color: #555;
+        }
+
         .hidden {
             display: none;
         }
@@ -827,21 +845,22 @@
                 }
                 
                 if (existingEntry) {
-                    // Update existing entry
-                    const { error: updateError } = await supabaseClientClient
+                    // Update existing entry - set new check-in time and clear check-out
+                    const { error: updateError } = await supabaseClient
                         .from('time_entries')
                         .update({
                             check_in_time: now,
                             check_out_time: null,
-                            total_hours: null,
                             auto_closed: false,
-                            updated_at: now
+                            updated_at: now,
+                            // Keep accumulated hours if they exist, don't reset to null
+                            notes: existingEntry.notes ? `${existingEntry.notes} | Re-checked in at ${new Date(now).toLocaleTimeString()}` : `Re-checked in at ${new Date(now).toLocaleTimeString()}`
                         })
                         .eq('id', existingEntry.id);
                     
                     if (updateError) throw updateError;
                 } else {
-                    // Create new entry
+                    // Create new entry for first check-in of the day
                     const { error: insertError } = await supabaseClient
                         .from('time_entries')
                         .insert({
@@ -886,18 +905,22 @@
                     return;
                 }
                 
-                // Calculate hours worked
+                // Calculate hours worked for this session
                 const checkInTime = new Date(entry.check_in_time);
                 const checkOutTime = new Date(now);
-                const hoursWorked = ((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2);
+                const sessionHours = ((checkOutTime - checkInTime) / (1000 * 60 * 60));
+                
+                // Add to existing total hours (for multiple sessions)
+                const newTotalHours = (entry.total_hours || 0) + sessionHours;
                 
                 // Update entry with checkout
                 const { error: updateError } = await supabaseClient
                     .from('time_entries')
                     .update({
                         check_out_time: now,
-                        total_hours: parseFloat(hoursWorked),
-                        updated_at: now
+                        total_hours: parseFloat(newTotalHours.toFixed(2)),
+                        updated_at: now,
+                        notes: entry.notes ? `${entry.notes} | Checked out at ${new Date(now).toLocaleTimeString()}` : `Checked out at ${new Date(now).toLocaleTimeString()}`
                     })
                     .eq('id', entry.id);
                 
@@ -944,20 +967,36 @@
                 }
                 
                 if (!entry || !entry.check_in_time) {
+                    // Not checked in today
                     statusElements.status.innerHTML = '<p style="color: #e74c3c;">Not checked in today</p>';
                     statusElements.checkinBtn.classList.remove('hidden');
                     statusElements.checkoutBtn.classList.add('hidden');
                 } else if (!entry.check_out_time) {
+                    // Currently checked in
                     const checkinTime = new Date(entry.check_in_time).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                         timeZone: currentRole === 'management' ? 'America/Los_Angeles' : undefined
                     });
                     const timeZone = currentRole === 'management' ? ' PST' : '';
-                    statusElements.status.innerHTML = `<p style="color: #27ae60;">Checked in at ${checkinTime}${timeZone}</p>`;
+                    
+                    let statusHTML = `
+                        <div class="session-info">
+                            <h4>✅ Currently Working</h4>
+                            <p><strong>Checked in:</strong> ${checkinTime}${timeZone}</p>
+                    `;
+                    
+                    if (entry.total_hours > 0) {
+                        statusHTML += `<p><strong>Total hours today:</strong> ${entry.total_hours} hours</p>`;
+                    }
+                    
+                    statusHTML += '</div>';
+                    
+                    statusElements.status.innerHTML = statusHTML;
                     statusElements.checkinBtn.classList.add('hidden');
                     statusElements.checkoutBtn.classList.remove('hidden');
                 } else {
+                    // Checked out - show option to check back in
                     const checkinTime = new Date(entry.check_in_time).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -970,14 +1009,23 @@
                     });
                     const timeZone = currentRole === 'management' ? ' PST' : '';
                     const autoClosedNote = entry.auto_closed ? ' (Auto-closed)' : '';
-                    statusElements.status.innerHTML = `
-                        <p style="color: #2c3e50;">
-                            Checked in: ${checkinTime}${timeZone}<br>
-                            Checked out: ${checkoutTime}${timeZone}${autoClosedNote}<br>
-                            Hours worked: ${entry.total_hours || 0}
-                        </p>
+                    
+                    let statusHTML = `
+                        <div class="session-info">
+                            <h4>📊 Today's Summary</h4>
+                            <p><strong>Last checked in:</strong> ${checkinTime}${timeZone}</p>
+                            <p><strong>Last checked out:</strong> ${checkoutTime}${timeZone}${autoClosedNote}</p>
+                            <p><strong>Total hours today:</strong> ${entry.total_hours || 0} hours</p>
                     `;
-                    statusElements.checkinBtn.classList.add('hidden');
+                    
+                    if (entry.notes) {
+                        statusHTML += `<p><strong>Activity:</strong> ${entry.notes}</p>`;
+                    }
+                    
+                    statusHTML += '<p style="margin-top: 10px; color: #667eea;"><strong>Ready to check back in?</strong></p></div>';
+                    
+                    statusElements.status.innerHTML = statusHTML;
+                    statusElements.checkinBtn.classList.remove('hidden');
                     statusElements.checkoutBtn.classList.add('hidden');
                 }
                 
@@ -1074,7 +1122,7 @@
                         item.innerHTML = `
                             <div>
                                 <div class="employee-name">${employee.name}</div>
-                                <div class="employee-details">Checked in: ${checkinTime} PST</div>
+                                <div class="employee-details">Checked in: ${checkinTime} PST | Total today: ${timeEntry.total_hours || 0}h</div>
                             </div>
                             <span class="status-badge status-present">Present</span>
                         `;
@@ -1154,7 +1202,7 @@
             }
             
             try {
-                const { error } = await supabaseClientClientClient
+                const { error } = await supabaseClient
                     .from('absences')
                     .upsert({
                         employee_id: parseInt(employeeId),
@@ -1184,7 +1232,7 @@
 
         async function loadExistingAbsences() {
             try {
-                const { data: absences, error } = await supabaseClientClient
+                const { data: absences, error } = await supabaseClient
                     .from('absences')
                     .select(`
                         *,
@@ -1232,7 +1280,7 @@
             if (newReason === null) return; // User cancelled
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('absences')
                     .update({
                         reason: newReason,
@@ -1256,7 +1304,7 @@
             if (!confirm('Are you sure you want to delete this absence record?')) return;
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('absences')
                     .delete()
                     .eq('id', id);
@@ -1339,7 +1387,7 @@
 
         async function generateDateRangeReport(startDate, endDate, containerId, title) {
             try {
-                const { data: absences, error } = await supabase
+                const { data: absences, error } = await supabaseClient
                     .from('absences')
                     .select(`
                         *,
@@ -1411,7 +1459,7 @@
             
             try {
                 // Get time entries for the period
-                const { data: timeEntries, error: timeError } = await supabase
+                const { data: timeEntries, error: timeError } = await supabaseClient
                     .from('time_entries')
                     .select(`
                         *,
@@ -1424,7 +1472,7 @@
                 if (timeError) throw timeError;
                 
                 // Get absences for partial day calculation
-                const { data: absences, error: absenceError } = await supabase
+                const { data: absences, error: absenceError } = await supabaseClient
                     .from('absences')
                     .select(`
                         *,
@@ -1624,15 +1672,16 @@
                     for (const entry of openEntries) {
                         const checkInTime = new Date(entry.check_in_time);
                         const checkOutTime = new Date(autoCheckOutTime);
-                        const hoursWorked = ((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2);
+                        const sessionHours = ((checkOutTime - checkInTime) / (1000 * 60 * 60));
+                        const newTotalHours = (entry.total_hours || 0) + sessionHours;
                         
                         await supabaseClient
                             .from('time_entries')
                             .update({
                                 check_out_time: autoCheckOutTime,
-                                total_hours: parseFloat(hoursWorked),
+                                total_hours: parseFloat(newTotalHours.toFixed(2)),
                                 auto_closed: true,
-                                notes: 'Auto-closed at 4:10 PM PST',
+                                notes: entry.notes ? `${entry.notes} | Auto-closed at 4:10 PM PST` : 'Auto-closed at 4:10 PM PST',
                                 updated_at: autoCheckOutTime
                             })
                             .eq('id', entry.id);
