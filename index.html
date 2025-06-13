@@ -243,6 +243,21 @@
             color: #880e4f;
         }
 
+        .status-pending {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+        }
+
+        .status-approved {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+        }
+
+        .status-denied {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+
         .footer {
             text-align: center;
             padding: 20px;
@@ -429,6 +444,95 @@
             margin-top: 5px;
         }
 
+        /* Bonus Section Styles */
+        .bonus-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%);
+            border-radius: 10px;
+            border: 2px solid #27ae60;
+        }
+
+        .bonus-section h3 {
+            color: #27ae60;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.5em;
+        }
+
+        .bonus-form {
+            display: grid;
+            grid-template-columns: 1fr 2fr auto;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .bonus-summary {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #27ae60;
+        }
+
+        .bonus-summary h4 {
+            color: #27ae60;
+            margin-bottom: 10px;
+        }
+
+        .bonus-total {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #004aad;
+        }
+
+        .bonus-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+
+        .bonus-details {
+            flex-grow: 1;
+        }
+
+        .bonus-amount {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 1.1em;
+        }
+
+        .bonus-reason {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .bonus-date {
+            color: #999;
+            font-size: 0.8em;
+        }
+
+        .bonus-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        input::placeholder {
+            color: #bbb;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             .dashboard-header {
                 flex-direction: column;
@@ -445,6 +549,11 @@
             
             .tab-btn {
                 margin: 2px 0;
+            }
+
+            .bonus-form {
+                grid-template-columns: 1fr;
+                gap: 10px;
             }
         }
     </style>
@@ -490,6 +599,40 @@
                     <button id="check-in-btn" class="btn btn-large btn-success" onclick="checkIn()">Check In</button>
                     <button id="check-out-btn" class="btn btn-large btn-danger hidden" onclick="checkOut()">Check Out</button>
                 </div>
+
+                <!-- Bonus Section for Employees -->
+                <div class="bonus-section">
+                    <h3>💰 Daily Bonus Tracker</h3>
+                    
+                    <div class="bonus-summary">
+                        <h4>Your Bonus Summary</h4>
+                        <div class="bonus-total">Total Potential Earnings: $<span id="employee-bonus-total">0.00</span></div>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                            Pending: $<span id="employee-bonus-pending">0.00</span> | 
+                            Approved: $<span id="employee-bonus-approved">0.00</span> | 
+                            Denied: $<span id="employee-bonus-denied">0.00</span>
+                        </p>
+                    </div>
+                    
+                    <div id="bonus-alert"></div>
+                    
+                    <div class="bonus-form">
+                        <div class="form-group">
+                            <label>Bonus Amount:</label>
+                            <input type="number" id="bonus-amount" placeholder="$10" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Reason/Reference:</label>
+                            <input type="text" id="bonus-reason" placeholder="25-123456">
+                        </div>
+                        <button class="btn btn-success" onclick="submitBonus()">Submit Bonus</button>
+                    </div>
+                    
+                    <div id="employee-bonus-history">
+                        <h4>Your Recent Bonus Requests</h4>
+                        <div id="employee-bonus-list"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Management Dashboard -->
@@ -529,6 +672,10 @@
                         <div class="stat-number" id="total-hours-today">0</div>
                         <div class="stat-label">Total Hours Today</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pending-bonuses">0</div>
+                        <div class="stat-label">Pending Bonuses</div>
+                    </div>
                 </div>
 
                 <div class="status-grid">
@@ -550,6 +697,7 @@
                 <div class="management-section">
                     <div class="management-tabs">
                         <button class="tab-btn active" onclick="showTab('absences')">Manage Absences</button>
+                        <button class="tab-btn" onclick="showTab('bonus-management')">Bonus Management</button>
                         <button class="tab-btn" onclick="showTab('weekly-report')">Weekly Report</button>
                         <button class="tab-btn" onclick="showTab('monthly-report')">Monthly Report</button>
                         <button class="tab-btn" onclick="showTab('custom-report')">Custom Date Report</button>
@@ -587,6 +735,37 @@
                         <button class="btn" onclick="addAbsence()">Add Absence</button>
                         <button class="btn btn-warning" onclick="loadExistingAbsences()">View/Edit Existing</button>
                         <div id="existing-absences"></div>
+                    </div>
+
+                    <div id="bonus-management-tab" class="tab-content">
+                        <h3>Bonus Management</h3>
+                        <div id="bonus-mgmt-alert"></div>
+                        
+                        <div class="stats-grid" style="margin-bottom: 20px;">
+                            <div class="stat-card">
+                                <div class="stat-number" id="total-pending-bonuses">0</div>
+                                <div class="stat-label">Pending Requests</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="total-approved-bonuses">$0</div>
+                                <div class="stat-label">Approved Today</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="total-bonus-amount">$0</div>
+                                <div class="stat-label">Total This Month</div>
+                            </div>
+                        </div>
+                        
+                        <div id="pending-bonus-requests">
+                            <h4>Pending Bonus Requests</h4>
+                            <div id="pending-bonus-list"></div>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h4>Recent Bonus History</h4>
+                            <button class="btn" onclick="loadBonusHistory()">Load Recent History</button>
+                            <div id="bonus-history-content"></div>
+                        </div>
                     </div>
 
                     <div id="weekly-report-tab" class="tab-content">
@@ -848,11 +1027,13 @@
                 document.getElementById('mgmt-logged-user').textContent = currentUser;
                 await updateCheckInStatus();
                 await updateLiveStatus();
+                await loadPendingBonuses();
             } else {
                 document.getElementById('employee-dashboard').style.display = 'block';
                 document.getElementById('logged-user').textContent = currentUser;
                 document.getElementById('logged-role').textContent = currentRole.charAt(0).toUpperCase() + currentRole.slice(1);
                 await updateCheckInStatus();
+                await loadEmployeeBonuses();
             }
         }
 
@@ -1128,6 +1309,14 @@
                     .eq('date', today);
                 
                 if (absenceError) throw absenceError;
+
+                // Get pending bonuses count
+                const { data: pendingBonuses, error: bonusError } = await supabaseClient
+                    .from('bonuses')
+                    .select('id')
+                    .eq('status', 'pending');
+                
+                if (bonusError) throw bonusError;
                 
                 const clockedInList = document.getElementById('clocked-in-list');
                 const absentList = document.getElementById('absent-list');
@@ -1141,6 +1330,9 @@
                 let totalAbsent = 0;
                 let totalNotChecked = 0;
                 let totalHoursToday = 0;
+                
+                // Update pending bonuses stat
+                document.getElementById('pending-bonuses').textContent = pendingBonuses.length;
                 
                 // Create maps for quick lookup
                 const timeEntryMap = {};
@@ -1257,78 +1449,301 @@
             }
         }
 
-        async function addAbsence() {
-            const employeeId = document.getElementById('absence-employee').value;
-            const date = document.getElementById('absence-date').value;
-            const type = document.getElementById('absence-type').value;
-            const reason = document.getElementById('absence-reason').value;
+        // Bonus Functions
+        async function submitBonus() {
+            const amount = parseFloat(document.getElementById('bonus-amount').value);
+            const reason = document.getElementById('bonus-reason').value.trim();
             
-            if (!employeeId || !date || !type) {
-                showAlert('absence-alert', 'Please fill in employee, date, and absence type', 'error');
+            if (!amount || amount <= 0) {
+                showAlert('bonus-alert', 'Please enter a valid bonus amount', 'error');
+                return;
+            }
+            
+            if (!reason) {
+                showAlert('bonus-alert', 'Please enter a reason/reference', 'error');
                 return;
             }
             
             try {
+                const today = new Date().toISOString().split('T')[0];
+                
                 const { error } = await supabaseClient
-                    .from('absences')
-                    .upsert({
-                        employee_id: parseInt(employeeId),
-                        date: date,
-                        type: type,
+                    .from('bonuses')
+                    .insert({
+                        employee_id: currentUserId,
+                        amount: amount,
                         reason: reason,
-                        entered_by: currentUser
+                        date: today,
+                        status: 'pending'
                     });
                 
                 if (error) throw error;
                 
                 // Clear form
-                document.getElementById('absence-employee').value = '';
-                document.getElementById('absence-type').value = '';
-                document.getElementById('absence-reason').value = '';
+                document.getElementById('bonus-amount').value = '';
+                document.getElementById('bonus-reason').value = '';
                 
-                const employeeName = employees.find(e => e.id == employeeId)?.name;
-                showAlert('absence-alert', `Absence recorded for ${employeeName} on ${date}`, 'success');
-                
-                await updateLiveStatus();
+                showAlert('bonus-alert', `Bonus request submitted for $${amount.toFixed(2)}`, 'success');
+                await loadEmployeeBonuses();
                 
             } catch (error) {
-                console.error('Error adding absence:', error);
-                showAlert('absence-alert', 'Error recording absence. Please try again.', 'error');
+                console.error('Error submitting bonus:', error);
+                showAlert('bonus-alert', 'Error submitting bonus request. Please try again.', 'error');
             }
         }
 
-        async function loadExistingAbsences() {
+        async function loadEmployeeBonuses() {
+            if (!currentUserId) return;
+            
             try {
-                const { data: absences, error } = await supabaseClient
-                    .from('absences')
+                const { data: bonuses, error } = await supabaseClient
+                    .from('bonuses')
+                    .select('*')
+                    .eq('employee_id', currentUserId)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                if (error) throw error;
+                
+                // Calculate totals
+                let totalPending = 0;
+                let totalApproved = 0;
+                let totalDenied = 0;
+                
+                bonuses.forEach(bonus => {
+                    if (bonus.status === 'pending') totalPending += bonus.amount;
+                    else if (bonus.status === 'approved') totalApproved += bonus.amount;
+                    else if (bonus.status === 'denied') totalDenied += bonus.amount;
+                });
+                
+                const totalPotential = totalPending + totalApproved;
+                
+                // Update summary
+                document.getElementById('employee-bonus-total').textContent = totalPotential.toFixed(2);
+                document.getElementById('employee-bonus-pending').textContent = totalPending.toFixed(2);
+                document.getElementById('employee-bonus-approved').textContent = totalApproved.toFixed(2);
+                document.getElementById('employee-bonus-denied').textContent = totalDenied.toFixed(2);
+                
+                // Display bonus list
+                const bonusList = document.getElementById('employee-bonus-list');
+                
+                if (bonuses.length === 0) {
+                    bonusList.innerHTML = '<p style="color: #6c757d; text-align: center;">No bonus requests yet</p>';
+                    return;
+                }
+                
+                let html = '';
+                bonuses.forEach(bonus => {
+                    const statusClass = bonus.status === 'pending' ? 'status-pending' : 
+                                       bonus.status === 'approved' ? 'status-approved' : 'status-denied';
+                    
+                    html += `
+                        <div class="bonus-item">
+                            <div class="bonus-details">
+                                <div class="bonus-amount">$${bonus.amount.toFixed(2)}</div>
+                                <div class="bonus-reason">${bonus.reason}</div>
+                                <div class="bonus-date">${new Date(bonus.date).toLocaleDateString()}</div>
+                            </div>
+                            <span class="status-badge ${statusClass}">
+                                ${bonus.status.charAt(0).toUpperCase() + bonus.status.slice(1)}
+                            </span>
+                        </div>
+                    `;
+                });
+                
+                bonusList.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading employee bonuses:', error);
+            }
+        }
+
+        async function loadPendingBonuses() {
+            if (currentRole !== 'management') return;
+            
+            try {
+                const { data: bonuses, error } = await supabaseClient
+                    .from('bonuses')
                     .select(`
                         *,
                         employees (name)
                     `)
-                    .order('date', { ascending: false })
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                const pendingList = document.getElementById('pending-bonus-list');
+                document.getElementById('total-pending-bonuses').textContent = bonuses.length;
+                
+                if (bonuses.length === 0) {
+                    pendingList.innerHTML = '<p style="color: #6c757d; text-align: center;">No pending bonus requests</p>';
+                    return;
+                }
+                
+                let html = '';
+                bonuses.forEach(bonus => {
+                    html += `
+                        <div class="bonus-item">
+                            <div class="bonus-details">
+                                <div class="bonus-amount">$${bonus.amount.toFixed(2)}</div>
+                                <div class="bonus-reason">${bonus.reason}</div>
+                                <div class="bonus-date">
+                                    ${bonus.employees.name} - ${new Date(bonus.date).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div class="bonus-actions">
+                                <button class="btn btn-success btn-small" onclick="approveBonus(${bonus.id})">Approve</button>
+                                <button class="btn btn-danger btn-small" onclick="denyBonus(${bonus.id})">Deny</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                pendingList.innerHTML = html;
+                
+                // Update bonus stats
+                await updateBonusStats();
+                
+            } catch (error) {
+                console.error('Error loading pending bonuses:', error);
+            }
+        }
+
+        async function approveBonus(bonusId) {
+            try {
+                const { error } = await supabaseClient
+                    .from('bonuses')
+                    .update({
+                        status: 'approved',
+                        approved_by: currentUser,
+                        approved_at: new Date().toISOString()
+                    })
+                    .eq('id', bonusId);
+                
+                if (error) throw error;
+                
+                showAlert('bonus-mgmt-alert', 'Bonus approved successfully', 'success');
+                await loadPendingBonuses();
+                
+            } catch (error) {
+                console.error('Error approving bonus:', error);
+                showAlert('bonus-mgmt-alert', 'Error approving bonus', 'error');
+            }
+        }
+
+        async function denyBonus(bonusId) {
+            const reason = prompt('Reason for denial (optional):');
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('bonuses')
+                    .update({
+                        status: 'denied',
+                        approved_by: currentUser,
+                        approved_at: new Date().toISOString(),
+                        denial_reason: reason
+                    })
+                    .eq('id', bonusId);
+                
+                if (error) throw error;
+                
+                showAlert('bonus-mgmt-alert', 'Bonus denied', 'warning');
+                await loadPendingBonuses();
+                
+            } catch (error) {
+                console.error('Error denying bonus:', error);
+                showAlert('bonus-mgmt-alert', 'Error denying bonus', 'error');
+            }
+        }
+
+        async function updateBonusStats() {
+            if (currentRole !== 'management') return;
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const startOfMonth = new Date();
+                startOfMonth.setDate(1);
+                const monthStart = startOfMonth.toISOString().split('T')[0];
+                
+                // Get approved bonuses for today
+                const { data: todayApproved, error: todayError } = await supabaseClient
+                    .from('bonuses')
+                    .select('amount')
+                    .eq('status', 'approved')
+                    .eq('date', today);
+                
+                if (todayError) throw todayError;
+                
+                // Get all approved bonuses for this month
+                const { data: monthApproved, error: monthError } = await supabaseClient
+                    .from('bonuses')
+                    .select('amount')
+                    .eq('status', 'approved')
+                    .gte('date', monthStart);
+                
+                if (monthError) throw monthError;
+                
+                const todayTotal = todayApproved.reduce((sum, bonus) => sum + bonus.amount, 0);
+                const monthTotal = monthApproved.reduce((sum, bonus) => sum + bonus.amount, 0);
+                
+                document.getElementById('total-approved-bonuses').textContent = `${todayTotal.toFixed(2)}`;
+                document.getElementById('total-bonus-amount').textContent = `${monthTotal.toFixed(2)}`;
+                
+            } catch (error) {
+                console.error('Error updating bonus stats:', error);
+            }
+        }
+
+        async function loadBonusHistory() {
+            if (currentRole !== 'management') return;
+            
+            try {
+                const { data: bonuses, error } = await supabaseClient
+                    .from('bonuses')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .order('created_at', { ascending: false })
                     .limit(50);
                 
                 if (error) throw error;
                 
-                const container = document.getElementById('existing-absences');
-                if (absences.length === 0) {
-                    container.innerHTML = '<p>No absences found.</p>';
+                const container = document.getElementById('bonus-history-content');
+                
+                if (bonuses.length === 0) {
+                    container.innerHTML = '<p>No bonus history found.</p>';
                     return;
                 }
                 
-                let html = '<h4>Recent Absences (Edit/Delete)</h4><table class="report-table"><thead><tr><th>Employee</th><th>Date</th><th>Type</th><th>Reason</th><th>Actions</th></tr></thead><tbody>';
+                let html = `
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Amount</th>
+                                <th>Reason</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Approved By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
                 
-                absences.forEach(absence => {
+                bonuses.forEach(bonus => {
+                    const statusClass = bonus.status === 'pending' ? 'status-pending' : 
+                                       bonus.status === 'approved' ? 'status-approved' : 'status-denied';
+                    
                     html += `
                         <tr>
-                            <td>${absence.employees.name}</td>
-                            <td>${new Date(absence.date).toLocaleDateString()}</td>
-                            <td>${absence.type === 'full' ? 'Full Day' : 'Partial Day'}</td>
-                            <td>${absence.reason || 'N/A'}</td>
-                            <td>
-                                <button class="btn btn-warning" onclick="editAbsence(${absence.id}, '${absence.date}', '${absence.type}', '${absence.reason || ''}')">Edit</button>
-                                <button class="btn btn-danger" onclick="deleteAbsence(${absence.id})">Delete</button>
-                            </td>
+                            <td>${bonus.employees.name}</td>
+                            <td>${bonus.amount.toFixed(2)}</td>
+                            <td>${bonus.reason}</td>
+                            <td>${new Date(bonus.date).toLocaleDateString()}</td>
+                            <td><span class="status-badge ${statusClass}">${bonus.status.charAt(0).toUpperCase() + bonus.status.slice(1)}</span></td>
+                            <td>${bonus.approved_by || 'N/A'}</td>
                         </tr>
                     `;
                 });
@@ -1337,458 +1752,7 @@
                 container.innerHTML = html;
                 
             } catch (error) {
-                console.error('Error loading existing absences:', error);
-                showAlert('absence-alert', 'Error loading absences', 'error');
+                console.error('Error loading bonus history:', error);
+                showAlert('bonus-mgmt-alert', 'Error loading bonus history', 'error');
             }
         }
-
-        async function editAbsence(id, date, type, reason) {
-            const newReason = prompt('Edit reason:', reason);
-            if (newReason === null) return; // User cancelled
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('absences')
-                    .update({
-                        reason: newReason,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', id);
-                
-                if (error) throw error;
-                
-                showAlert('absence-alert', 'Absence updated successfully', 'success');
-                await loadExistingAbsences();
-                await updateLiveStatus();
-                
-            } catch (error) {
-                console.error('Error updating absence:', error);
-                showAlert('absence-alert', 'Error updating absence', 'error');
-            }
-        }
-
-        async function deleteAbsence(id) {
-            if (!confirm('Are you sure you want to delete this absence record?')) return;
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('absences')
-                    .delete()
-                    .eq('id', id);
-                
-                if (error) throw error;
-                
-                showAlert('absence-alert', 'Absence deleted successfully', 'success');
-                await loadExistingAbsences();
-                await updateLiveStatus();
-                
-            } catch (error) {
-                console.error('Error deleting absence:', error);
-                showAlert('absence-alert', 'Error deleting absence', 'error');
-            }
-        }
-
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        async function generateWeeklyReport() {
-            const today = new Date();
-            const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-            const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
-            
-            await generateDateRangeReport(
-                startOfWeek.toISOString().split('T')[0],
-                endOfWeek.toISOString().split('T')[0],
-                'weekly-report-content',
-                'This Week\'s Attendance Report'
-            );
-        }
-
-        async function generateMonthlyReport() {
-            const today = new Date();
-            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            
-            await generateDateRangeReport(
-                startOfMonth.toISOString().split('T')[0],
-                endOfMonth.toISOString().split('T')[0],
-                'monthly-report-content',
-                'This Month\'s Attendance Report'
-            );
-        }
-
-        async function generateCustomReport() {
-            const startDate = document.getElementById('custom-start-date').value;
-            const endDate = document.getElementById('custom-end-date').value;
-            
-            if (!startDate || !endDate) {
-                alert('Please select both start and end dates');
-                return;
-            }
-            
-            if (new Date(startDate) > new Date(endDate)) {
-                alert('Start date must be before end date');
-                return;
-            }
-            
-            await generateDateRangeReport(
-                startDate,
-                endDate,
-                'custom-report-content',
-                `Custom Report (${startDate} to ${endDate})`
-            );
-        }
-
-        async function generateDateRangeReport(startDate, endDate, containerId, title) {
-            try {
-                const { data: absences, error } = await supabaseClient
-                    .from('absences')
-                    .select(`
-                        *,
-                        employees (name)
-                    `)
-                    .gte('date', startDate)
-                    .lte('date', endDate)
-                    .order('date');
-                
-                if (error) throw error;
-                
-                const reportData = [];
-                
-                employees.forEach(employee => {
-                    let fullDaysMissed = 0;
-                    let partialDaysMissed = 0;
-                    
-                    absences.forEach(absence => {
-                        if (absence.employee_id === employee.id) {
-                            if (absence.type === 'full') {
-                                fullDaysMissed++;
-                            } else if (absence.type === 'partial') {
-                                partialDaysMissed++;
-                            }
-                        }
-                    });
-                    
-                    reportData.push({
-                        employee: employee.name,
-                        fullDaysMissed,
-                        partialDaysMissed
-                    });
-                });
-                
-                displayReport(containerId, reportData, title);
-                
-            } catch (error) {
-                console.error('Error generating report:', error);
-                alert('Error generating report. Please try again.');
-            }
-        }
-
-        async function generateHoursReport() {
-            const reportType = document.getElementById('hours-report-type').value;
-            let startDate, endDate, title;
-            
-            const today = new Date();
-            
-            switch (reportType) {
-                case 'today':
-                    startDate = endDate = today.toISOString().split('T')[0];
-                    title = 'Today\'s Hours Report';
-                    break;
-                case 'week':
-                    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-                    const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
-                    startDate = startOfWeek.toISOString().split('T')[0];
-                    endDate = endOfWeek.toISOString().split('T')[0];
-                    title = 'This Week\'s Hours Report';
-                    break;
-                case 'month':
-                    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                    startDate = startOfMonth.toISOString().split('T')[0];
-                    endDate = endOfMonth.toISOString().split('T')[0];
-                    title = 'This Month\'s Hours Report';
-                    break;
-            }
-            
-            try {
-                // Get time entries for the period
-                const { data: timeEntries, error: timeError } = await supabaseClient
-                    .from('time_entries')
-                    .select(`
-                        *,
-                        employees (name)
-                    `)
-                    .gte('date', startDate)
-                    .lte('date', endDate)
-                    .order('date');
-                
-                if (timeError) throw timeError;
-                
-                // Get absences for partial day calculation
-                const { data: absences, error: absenceError } = await supabaseClient
-                    .from('absences')
-                    .select(`
-                        *,
-                        employees (name)
-                    `)
-                    .eq('type', 'partial')
-                    .gte('date', startDate)
-                    .lte('date', endDate);
-                
-                if (absenceError) throw absenceError;
-                
-                const hoursData = [];
-                
-                employees.forEach(employee => {
-                    let totalHours = 0;
-                    let daysWorked = 0;
-                    
-                    // Add hours from time entries
-                    timeEntries.forEach(entry => {
-                        if (entry.employee_id === employee.id && entry.total_hours) {
-                            totalHours += entry.total_hours;
-                            daysWorked++;
-                        }
-                    });
-                    
-                    // Add 4 hours for each partial day absence
-                    absences.forEach(absence => {
-                        if (absence.employee_id === employee.id) {
-                            totalHours += 4;
-                            daysWorked++;
-                        }
-                    });
-                    
-                    hoursData.push({
-                        employee: employee.name,
-                        totalHours: totalHours.toFixed(2),
-                        daysWorked
-                    });
-                });
-                
-                displayHoursReport('hours-report-content', hoursData, title);
-                
-            } catch (error) {
-                console.error('Error generating hours report:', error);
-                alert('Error generating hours report. Please try again.');
-            }
-        }
-
-        async function filterPastAbsences() {
-            const filterDate = document.getElementById('absence-filter-date').value;
-            const filterEmployeeId = document.getElementById('absence-filter-employee').value;
-            
-            try {
-                let query = supabaseClient
-                    .from('absences')
-                    .select(`
-                        *,
-                        employees (name)
-                    `)
-                    .order('date', { ascending: false });
-                
-                if (filterDate) {
-                    query = query.eq('date', filterDate);
-                }
-                
-                if (filterEmployeeId) {
-                    query = query.eq('employee_id', parseInt(filterEmployeeId));
-                }
-                
-                const { data: absences, error } = await query.limit(100);
-                
-                if (error) throw error;
-                
-                const container = document.getElementById('past-absences-content');
-                
-                if (absences.length === 0) {
-                    container.innerHTML = '<p>No absences found for the selected criteria.</p>';
-                    return;
-                }
-                
-                let html = '<table class="report-table"><thead><tr><th>Employee</th><th>Date</th><th>Type</th><th>Reason</th><th>Entered By</th></tr></thead><tbody>';
-                
-                absences.forEach(absence => {
-                    html += `
-                        <tr>
-                            <td>${absence.employees.name}</td>
-                            <td>${new Date(absence.date).toLocaleDateString()}</td>
-                            <td>${absence.type === 'full' ? 'Full Day' : 'Partial Day'}</td>
-                            <td>${absence.reason || 'N/A'}</td>
-                            <td>${absence.entered_by}</td>
-                        </tr>
-                    `;
-                });
-                
-                html += '</tbody></table>';
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Error filtering past absences:', error);
-                alert('Error loading past absences. Please try again.');
-            }
-        }
-
-        function displayReport(containerId, data, title) {
-            const container = document.getElementById(containerId);
-            
-            let tableHTML = `
-                <h4>${title}</h4>
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>Employee</th>
-                            <th>Full Days Missed</th>
-                            <th>Partial Days Missed</th>
-                            <th>Total Days Affected</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            data.forEach(row => {
-                const totalAffected = row.fullDaysMissed + row.partialDaysMissed;
-                tableHTML += `
-                    <tr>
-                        <td>${row.employee}</td>
-                        <td>${row.fullDaysMissed}</td>
-                        <td>${row.partialDaysMissed}</td>
-                        <td>${totalAffected}</td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += '</tbody></table>';
-            container.innerHTML = tableHTML;
-        }
-
-        function displayHoursReport(containerId, data, title) {
-            const container = document.getElementById(containerId);
-            
-            let tableHTML = `
-                <h4>${title}</h4>
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>Employee</th>
-                            <th>Total Hours</th>
-                            <th>Days Worked</th>
-                            <th>Average Hours/Day</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            data.forEach(row => {
-                const avgHours = row.daysWorked > 0 ? (row.totalHours / row.daysWorked).toFixed(2) : '0.00';
-                tableHTML += `
-                    <tr>
-                        <td>${row.employee}</td>
-                        <td>${row.totalHours}</td>
-                        <td>${row.daysWorked}</td>
-                        <td>${avgHours}</td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += '</tbody></table>';
-            container.innerHTML = tableHTML;
-        }
-
-        async function autoCheckOutDaily() {
-            // Check if it's 4:10 PM PST
-            const now = new Date();
-            const pstTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
-            const hours = pstTime.getHours();
-            const minutes = pstTime.getMinutes();
-            
-            // Only run at 4:10 PM PST
-            if (hours !== 16 || minutes !== 10) return;
-            
-            try {
-                const today = new Date().toISOString().split('T')[0];
-                
-                // Get all employees still checked in
-                const { data: openEntries, error } = await supabaseClient
-                    .from('time_entries')
-                    .select('*')
-                    .eq('date', today)
-                    .not('check_in_time', 'is', null)
-                    .is('check_out_time', null);
-                
-                if (error) throw error;
-                
-                if (openEntries.length > 0) {
-                    // Auto check out everyone still clocked in
-                    const autoCheckOutTime = new Date().toISOString();
-                    
-                    for (const entry of openEntries) {
-                        const checkInTime = new Date(entry.check_in_time);
-                        const checkOutTime = new Date(autoCheckOutTime);
-                        const sessionHours = ((checkOutTime - checkInTime) / (1000 * 60 * 60));
-                        const newTotalHours = (entry.total_hours || 0) + sessionHours;
-                        
-                        await supabaseClient
-                            .from('time_entries')
-                            .update({
-                                check_out_time: autoCheckOutTime,
-                                total_hours: parseFloat(newTotalHours.toFixed(2)),
-                                auto_closed: true,
-                                notes: entry.notes ? `${entry.notes} | Auto-closed at 4:10 PM PST` : 'Auto-closed at 4:10 PM PST',
-                                updated_at: autoCheckOutTime
-                            })
-                            .eq('id', entry.id);
-                    }
-                    
-                    console.log(`Auto-checked out ${openEntries.length} employees at 4:10 PM PST`);
-                    
-                    // Update displays if management is logged in
-                    if (currentRole === 'management') {
-                        await updateLiveStatus();
-                    }
-                    
-                    if (currentUserId) {
-                        await updateCheckInStatus();
-                    }
-                }
-                
-            } catch (error) {
-                console.error('Error during auto checkout:', error);
-            }
-        }
-
-        function showAlert(containerId, message, type) {
-            const container = document.getElementById(containerId);
-            const alertClass = type === 'error' ? 'alert-error' : type === 'success' ? 'alert-success' : 'alert-warning';
-            container.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
-            
-            // Clear alert after 5 seconds
-            setTimeout(() => clearAlert(containerId), 5000);
-        }
-
-        function clearAlert(containerId) {
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.innerHTML = '';
-            }
-        }
-
-        // Initialize the app when page loads
-        window.onload = init;
-    </script>
-</body>
-</html>
