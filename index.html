@@ -14,9 +14,11 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #004aad 0%, #002a73 100%);
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><path d="M15 10 L25 25 L20 25 L30 45 L18 45 L22 25 L15 25 Z" fill="%23ffd13e" opacity="0.1"/><path d="M65 15 L75 30 L70 30 L80 50 L68 50 L72 30 L65 30 Z" fill="%23ffd13e" opacity="0.08"/><path d="M40 60 L50 75 L45 75 L55 95 L43 95 L47 75 L40 75 Z" fill="%23ffd13e" opacity="0.06"/></svg>');
             min-height: 100vh;
             padding: 20px;
+            position: relative;
         }
 
         .container {
@@ -29,10 +31,28 @@
         }
 
         .header {
-            background: #2c3e50;
+            background: linear-gradient(135deg, #004aad 0%, #002a73 100%);
             color: white;
             padding: 20px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="50" height="50"><path d="M20 15 L30 30 L25 30 L35 50 L23 50 L27 30 L20 30 Z" fill="%23ffd13e" opacity="0.15"/></svg>');
+            z-index: 1;
+        }
+
+        .header h1, .header p {
+            position: relative;
+            z-index: 2;
         }
 
         .header h1 {
@@ -59,7 +79,7 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #2c3e50;
+            color: #004aad;
         }
 
         select, input {
@@ -73,23 +93,26 @@
 
         select:focus, input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #004aad;
         }
 
         .btn {
-            background: #667eea;
+            background: #004aad;
             color: white;
             border: none;
             padding: 12px 24px;
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
             margin: 5px;
+            box-shadow: 0 2px 4px rgba(0, 74, 173, 0.2);
         }
 
         .btn:hover {
-            background: #5a6fd8;
+            background: #003d91;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 74, 173, 0.3);
         }
 
         .btn:disabled {
@@ -98,27 +121,28 @@
         }
 
         .btn-success {
-            background: #27ae60;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
         }
 
         .btn-success:hover {
-            background: #229954;
+            background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
         }
 
         .btn-danger {
-            background: #e74c3c;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
         }
 
         .btn-danger:hover {
-            background: #c0392b;
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
         }
 
         .btn-warning {
-            background: #f39c12;
+            background: linear-gradient(135deg, #ffd13e 0%, #f39c12 100%);
+            color: #004aad;
         }
 
         .btn-warning:hover {
-            background: #e67e22;
+            background: linear-gradient(135deg, #e6bc35 0%, #e67e22 100%);
         }
 
         .btn-large {
@@ -143,7 +167,7 @@
 
         .user-info {
             font-size: 18px;
-            color: #2c3e50;
+            color: #004aad;
         }
 
         .status-grid {
@@ -163,8 +187,8 @@
 
         .status-card h3 {
             margin-bottom: 15px;
-            color: #2c3e50;
-            border-bottom: 2px solid #667eea;
+            color: #004aad;
+            border-bottom: 2px solid #ffd13e;
             padding-bottom: 8px;
         }
 
@@ -195,28 +219,45 @@
         }
 
         .status-present {
-            background: #d4edda;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
             color: #155724;
         }
 
         .status-absent {
-            background: #f8d7da;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
             color: #721c24;
         }
 
         .status-partial {
-            background: #fff3cd;
-            color: #856404;
+            background: linear-gradient(135deg, #ffd13e 0%, #fff3cd 100%);
+            color: #004aad;
         }
 
         .status-not-checked {
-            background: #e2e3e5;
+            background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%);
             color: #383d41;
         }
 
         .status-auto-closed {
-            background: #fce4ec;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
             color: #880e4f;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            color: white;
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(0, 74, 173, 0.1) 0%, rgba(0, 42, 115, 0.1) 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 209, 62, 0.3);
+        }
+
+        .footer .lightning {
+            color: #ffd13e;
+            font-size: 1.2em;
+            margin: 0 2px;
         }
 
         .management-section {
@@ -244,7 +285,7 @@
         }
 
         .tab-btn.active {
-            background: #667eea;
+            background: #004aad;
         }
 
         .tab-content {
@@ -270,7 +311,7 @@
         }
 
         .report-table th {
-            background: #667eea;
+            background: #004aad;
             color: white;
             font-weight: 600;
         }
@@ -289,20 +330,21 @@
 
         .time-display {
             font-size: 24px;
-            color: #2c3e50;
+            color: #004aad;
             margin-bottom: 20px;
         }
 
         .session-info {
-            background: #e8f4f8;
+            background: linear-gradient(135deg, #e8f4f8 0%, #f0f8ff 100%);
             padding: 15px;
             border-radius: 8px;
             margin: 10px 0;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #ffd13e;
+            box-shadow: 0 2px 4px rgba(0, 74, 173, 0.1);
         }
 
         .session-info h4 {
-            color: #2c3e50;
+            color: #004aad;
             margin-bottom: 8px;
         }
 
@@ -378,7 +420,7 @@
         .stat-number {
             font-size: 24px;
             font-weight: bold;
-            color: #667eea;
+            color: #004aad;
         }
 
         .stat-label {
@@ -610,6 +652,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <strong>Powered by PHG<span class="lightning">⚡</span></strong>
         </div>
     </div>
 
