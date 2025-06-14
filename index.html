@@ -687,12 +687,6 @@
                     </select>
                 </div>
                 
-                <!-- DEBUG: Add manual test buttons -->
-                <div class="form-group">
-                    <button type="button" class="btn" onclick="testConnection()" style="background: #6c757d; font-size: 14px;">🔧 Test Database</button>
-                    <button type="button" class="btn" onclick="manualLoadEmployees()" style="background: #6c757d; font-size: 14px;">🔄 Reload Employees</button>
-                </div>
-                
                 <!-- DEBUG: Add manual test button -->
                 <div class="form-group">
                     <button type="button" class="btn" onclick="testConnection()" style="background: #6c757d;">🔧 Test Database Connection</button>
@@ -2760,27 +2754,4 @@
             }
         }
 
-        window.onload = function() {
-            console.log('=== WINDOW LOADED ===');
-            init().catch(error => {
-                console.error('Init failed:', error);
-                showAlert('login-alert', `Startup failed: ${error.message}`, 'error');
-            });
-        };
-
-        // Also try to initialize when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('=== DOM CONTENT LOADED ===');
-                if (typeof init === 'function') {
-                    init().catch(error => {
-                        console.error('Init failed on DOMContentLoaded:', error);
-                    });
-                }
-            });
-        } else {
-            console.log('=== DOM ALREADY LOADED ===');
-            init().catch(error => {
-                console.error('Init failed on immediate call:', error);
-            });
-        }
+        window.onload = init;
