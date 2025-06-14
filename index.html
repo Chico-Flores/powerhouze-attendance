@@ -686,12 +686,6 @@
                         <option value="">Loading employees...</option>
                     </select>
                 </div>
-                
-                <!-- DEBUG: Add manual test button -->
-                <div class="form-group">
-                    <button type="button" class="btn" onclick="testConnection()" style="background: #6c757d;">🔧 Test Database Connection</button>
-                    <button type="button" class="btn" onclick="manualLoadEmployees()" style="background: #6c757d;">🔄 Reload Employees</button>
-                </div>
                 <div class="form-group password-field" id="password-field">
                     <label for="management-password">Management Password:</label>
                     <input type="password" id="management-password" placeholder="Enter management password">
@@ -1002,141 +996,9 @@
         let currentRole = null;
         let employees = [];
 
-        // DEBUG FUNCTIONS
-        async function testConnection() {
-            console.log('=== TESTING DATABASE CONNECTION ===');
-            showAlert('login-alert', 'Testing connection...', 'warning');
-            
-            try {
-                console.log('Supabase URL:', SUPABASE_URL);
-                console.log('Supabase client:', supabaseClient);
-                
-                // Test 1: Basic connection
-                console.log('Test 1: Basic connection test...');
-                const { data: testData, error: testError } = await supabaseClient
-                    .from('employees')
-                    .select('count(*)', { count: 'exact', head: true });
-                
-                console.log('Connection test result:', { testData, testError });
-                
-                if (testError) {
-                    showAlert('login-alert', `Connection failed: ${testError.message}`, 'error');
-                    return;
-                }
-                
-                // Test 2: Fetch actual data
-                console.log('Test 2: Fetching employees...');
-                const { data: employees, error: employeesError } = await supabaseClient
-                    .from('employees')
-                    .select('*');
-                
-                console.log('Employees query result:', { employees, employeesError });
-                
-                if (employeesError) {
-                    showAlert('login-alert', `Query failed: ${employeesError.message}`, 'error');
-                    return;
-                }
-                
-                if (!employees || employees.length === 0) {
-                    showAlert('login-alert', 'Connection successful but no employees found in database', 'warning');
-                    return;
-                }
-                
-                showAlert('login-alert', `Connection successful! Found ${employees.length} employees`, 'success');
-                console.log('Found employees:', employees);
-                
-            } catch (error) {
-                console.error('Test connection error:', error);
-                showAlert('login-alert', `Test failed: ${error.message}`, 'error');
-            }
-        }
-
-        async function manualLoadEmployees() {
-            console.log('=== MANUAL EMPLOYEE LOAD ===');
-            showAlert('login-alert', 'Manually loading employees...', 'warning');
-            await loadEmployees();
-        }
-
-        // Initialize the application
-        async function init() {
-            console.log('=== APPLICATION STARTING ===');
-            console.log('Supabase URL:', SUPABASE_URL);
-            console.log('Current time:', new Date().toISOString());
-            
-            try {
-                updateDateTime();
-                setInterval(updateDateTime, 1000);
-                
-                console.log('Starting employee load...');
-                await loadEmployees();
-                
-                setInterval(updateLiveStatus, 30000);
-                setInterval(autoCheckOutDaily, 60000);
-                
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('absence-date').value = today;
-                
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                document.getElementById('custom-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
-                document.getElementById('custom-end-date').value = today;
-                
-                // Set default dates for bonus history search
-                document.getElementById('bonus-history-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
-                document.getElementById('bonus-history-end-date').value = today;
-                
-                console.log('=== APPLICATION INITIALIZED SUCCESSFULLY ===');
-            } catch (error) {
-                console.error('=== APPLICATION INITIALIZATION FAILED ===', error);
-                showAlert('login-alert', `Initialization failed: ${error.message}`, 'error');
-            }
-        }
-
-        function updateDateTime() {
-            const now = new Date();
-            const dateOptions = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            
-            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', dateOptions);
-            
-            const localTime = now.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            const pstTime = now.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                timeZone: 'America/Los_Angeles'
-            });
-            
-            const currentTimeElement = document.getElementById('current-time');
-            if (currentTimeElement) {
-                currentTimeElement.textContent = `${localTime} (Your Local Time)`;
-            }
-            
-            const mgmtTimeElement = document.getElementById('mgmt-current-time');
-            if (mgmtTimeElement) {
-                mgmtTimeElement.textContent = `${pstTime} PST`;
-            }
-        }
-
         async function loadEmployees() {
             try {
                 console.log('Loading employees...');
-                
-                // Test Supabase connection first
-                const { data: testData, error: testError } = await supabaseClient
-                    .from('employees')
-                    .select('count(*)', { count: 'exact' });
-                
-                console.log('Connection test result:', { testData, testError });
                 
                 const { data, error } = await supabaseClient
                     .from('employees')
@@ -1147,30 +1009,29 @@
                 
                 if (error) {
                     console.error('Supabase error:', error);
-                    throw error;
+                    showAlert('login-alert', `Database error: ${error.message}`, 'error');
+                    return;
                 }
                 
                 if (!data || data.length === 0) {
                     console.warn('No employees found in database');
-                    showAlert('login-alert', 'No employees found in database. Please contact administrator.', 'warning');
+                    showAlert('login-alert', 'No employees found. Please add employees to the database first.', 'warning');
+                    
+                    // Update dropdown to show no employees
+                    const select = document.getElementById('employee-select');
+                    select.innerHTML = '<option value="">No employees found - Contact administrator</option>';
                     return;
                 }
                 
                 employees = data;
-                console.log('Loaded employees:', employees);
+                console.log('Successfully loaded employees:', employees);
                 populateEmployeeDropdowns();
+                
+                showAlert('login-alert', `Successfully loaded ${employees.length} employees`, 'success');
+                
             } catch (error) {
                 console.error('Error loading employees:', error);
-                console.error('Error details:', error.message, error.details, error.hint);
-                showAlert('login-alert', `Error loading employees: ${error.message}. Please check console and refresh the page.`, 'error');
-                
-                // Fallback: Try to populate with a test entry to see if the dropdown works
-                employees = [{
-                    id: 999,
-                    name: 'Test Employee (Connection Issue)',
-                    role: 'employee'
-                }];
-                populateEmployeeDropdowns();
+                showAlert('login-alert', `Connection error: ${error.message}`, 'error');
             }
         }
 
