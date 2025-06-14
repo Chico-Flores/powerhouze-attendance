@@ -1966,7 +1966,6 @@
             }
         }
 
-        // NEW FUNCTION: Load bonus history by custom date range
         async function loadBonusHistoryByDate() {
             if (currentRole !== 'management') return;
             
@@ -2114,8 +2113,8 @@
                             <td>${absence.type === 'full' ? 'Full Day' : 'Partial Day'}</td>
                             <td>${absence.reason || 'N/A'}</td>
                             <td>
-                                <button class="btn btn-warning" onclick="editAbsence(${absence.id}, '${absence.date}', '${absence.type}', '${absence.reason || ''}')">Edit</button>
-                                <button class="btn btn-danger" onclick="deleteAbsence(${absence.id})">Delete</button>
+                                <button class="btn btn-warning btn-small" onclick="editAbsence(${absence.id}, '${absence.date}', '${absence.type}', '${absence.reason || ''}')">Edit</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteAbsence(${absence.id})">Delete</button>
                             </td>
                         </tr>
                     `;
@@ -2241,7 +2240,6 @@
             );
         }
 
-        // UPDATED: generateDateRangeReport with bonus totals
         async function generateDateRangeReport(startDate, endDate, containerId, title) {
             try {
                 const { data: absences, error } = await supabaseClient
@@ -2256,7 +2254,6 @@
                 
                 if (error) throw error;
                 
-                // NEW: Get approved bonuses for the date range
                 const { data: bonuses, error: bonusError } = await supabaseClient
                     .from('bonuses')
                     .select(`
@@ -2360,7 +2357,6 @@
                 
                 if (absenceError) throw absenceError;
                 
-                // NEW: Get approved bonuses for the date range
                 const { data: bonuses, error: bonusError } = await supabaseClient
                     .from('bonuses')
                     .select(`
@@ -2471,7 +2467,6 @@
             }
         }
 
-        // UPDATED: displayReport with bonus total column
         function displayReport(containerId, data, title) {
             const container = document.getElementById(containerId);
             
@@ -2507,7 +2502,6 @@
             container.innerHTML = tableHTML;
         }
 
-        // UPDATED: displayHoursReport with bonus total column
         function displayHoursReport(containerId, data, title) {
             const container = document.getElementById(containerId);
             
@@ -2615,4 +2609,53 @@
             }
         }
 
+        // INITIALIZATION FUNCTION
+        async function init() {
+            // Update current date display
+            const now = new Date();
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric', 
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // Update time displays
+            function updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                
+                const timeElements = ['current-time', 'mgmt-current-time'];
+                timeElements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = timeString;
+                    }
+                });
+            }
+            
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // Set default date for absence date picker to today
+            const today = new Date().toISOString().split('T')[0];
+            const absenceDateInput = document.getElementById('absence-date');
+            if (absenceDateInput) {
+                absenceDateInput.value = today;
+            }
+
+            // Load employees from database
+            await loadEmployees();
+
+            // Start auto-checkout interval (check every minute)
+            setInterval(autoCheckOutDaily, 60000);
+        }
+
         window.onload = init;
+    </script>
+</body>
+</html>
