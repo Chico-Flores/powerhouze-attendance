@@ -686,6 +686,18 @@
                         <option value="">Loading employees...</option>
                     </select>
                 </div>
+                
+                <!-- DEBUG: Add manual test buttons -->
+                <div class="form-group">
+                    <button type="button" class="btn" onclick="testConnection()" style="background: #6c757d; font-size: 14px;">🔧 Test Database</button>
+                    <button type="button" class="btn" onclick="manualLoadEmployees()" style="background: #6c757d; font-size: 14px;">🔄 Reload Employees</button>
+                </div>
+                
+                <!-- DEBUG: Add manual test button -->
+                <div class="form-group">
+                    <button type="button" class="btn" onclick="testConnection()" style="background: #6c757d;">🔧 Test Database Connection</button>
+                    <button type="button" class="btn" onclick="manualLoadEmployees()" style="background: #6c757d;">🔄 Reload Employees</button>
+                </div>
                 <div class="form-group password-field" id="password-field">
                     <label for="management-password">Management Password:</label>
                     <input type="password" id="management-password" placeholder="Enter management password">
@@ -996,32 +1008,94 @@
         let currentRole = null;
         let employees = [];
 
+        // DEBUG FUNCTIONS
+        async function testConnection() {
+            console.log('=== TESTING DATABASE CONNECTION ===');
+            showAlert('login-alert', 'Testing connection...', 'warning');
+            
+            try {
+                console.log('Supabase URL:', SUPABASE_URL);
+                console.log('Supabase client:', supabaseClient);
+                
+                // Test 1: Basic connection
+                console.log('Test 1: Basic connection test...');
+                const { data: testData, error: testError } = await supabaseClient
+                    .from('employees')
+                    .select('count(*)', { count: 'exact', head: true });
+                
+                console.log('Connection test result:', { testData, testError });
+                
+                if (testError) {
+                    showAlert('login-alert', `Connection failed: ${testError.message}`, 'error');
+                    return;
+                }
+                
+                // Test 2: Fetch actual data
+                console.log('Test 2: Fetching employees...');
+                const { data: employees, error: employeesError } = await supabaseClient
+                    .from('employees')
+                    .select('*');
+                
+                console.log('Employees query result:', { employees, employeesError });
+                
+                if (employeesError) {
+                    showAlert('login-alert', `Query failed: ${employeesError.message}`, 'error');
+                    return;
+                }
+                
+                if (!employees || employees.length === 0) {
+                    showAlert('login-alert', 'Connection successful but no employees found in database', 'warning');
+                    return;
+                }
+                
+                showAlert('login-alert', `Connection successful! Found ${employees.length} employees`, 'success');
+                console.log('Found employees:', employees);
+                
+            } catch (error) {
+                console.error('Test connection error:', error);
+                showAlert('login-alert', `Test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function manualLoadEmployees() {
+            console.log('=== MANUAL EMPLOYEE LOAD ===');
+            showAlert('login-alert', 'Manually loading employees...', 'warning');
+            await loadEmployees();
+        }
+
         // Initialize the application
         async function init() {
-            console.log('Initializing application...');
+            console.log('=== APPLICATION STARTING ===');
+            console.log('Supabase URL:', SUPABASE_URL);
+            console.log('Current time:', new Date().toISOString());
             
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
-            
-            console.log('Loading employees...');
-            await loadEmployees();
-            
-            setInterval(updateLiveStatus, 30000);
-            setInterval(autoCheckOutDaily, 60000);
-            
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('absence-date').value = today;
-            
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            document.getElementById('custom-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
-            document.getElementById('custom-end-date').value = today;
-            
-            // Set default dates for bonus history search
-            document.getElementById('bonus-history-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
-            document.getElementById('bonus-history-end-date').value = today;
-            
-            console.log('Application initialization complete');
+            try {
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+                
+                console.log('Starting employee load...');
+                await loadEmployees();
+                
+                setInterval(updateLiveStatus, 30000);
+                setInterval(autoCheckOutDaily, 60000);
+                
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('absence-date').value = today;
+                
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                document.getElementById('custom-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
+                document.getElementById('custom-end-date').value = today;
+                
+                // Set default dates for bonus history search
+                document.getElementById('bonus-history-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
+                document.getElementById('bonus-history-end-date').value = today;
+                
+                console.log('=== APPLICATION INITIALIZED SUCCESSFULLY ===');
+            } catch (error) {
+                console.error('=== APPLICATION INITIALIZATION FAILED ===', error);
+                showAlert('login-alert', `Initialization failed: ${error.message}`, 'error');
+            }
         }
 
         function updateDateTime() {
@@ -2686,4 +2760,27 @@
             }
         }
 
-        window.onload = init;
+        window.onload = function() {
+            console.log('=== WINDOW LOADED ===');
+            init().catch(error => {
+                console.error('Init failed:', error);
+                showAlert('login-alert', `Startup failed: ${error.message}`, 'error');
+            });
+        };
+
+        // Also try to initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('=== DOM CONTENT LOADED ===');
+                if (typeof init === 'function') {
+                    init().catch(error => {
+                        console.error('Init failed on DOMContentLoaded:', error);
+                    });
+                }
+            });
+        } else {
+            console.log('=== DOM ALREADY LOADED ===');
+            init().catch(error => {
+                console.error('Init failed on immediate call:', error);
+            });
+        }
