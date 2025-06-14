@@ -533,6 +533,111 @@
             font-style: italic;
         }
 
+        /* NEW STYLES FOR EXPAND/COLLAPSE AND TABS */
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            transition: background-color 0.3s;
+        }
+
+        .collapsible-header:hover {
+            background: #e9ecef;
+        }
+
+        .collapsible-header h4 {
+            margin: 0;
+            color: #004aad;
+        }
+
+        .expand-icon {
+            color: #004aad;
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .collapsible-content.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+
+        .bonus-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .bonus-tab {
+            background: transparent;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .bonus-tab.active {
+            color: #004aad;
+            border-bottom-color: #004aad;
+            background: rgba(0, 74, 173, 0.1);
+        }
+
+        .bonus-tab-content {
+            display: none;
+        }
+
+        .bonus-tab-content.active {
+            display: block;
+        }
+
+        .denial-reason {
+            font-size: 0.8em;
+            color: #721c24;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .custom-date-search {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .date-search-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
         @media (max-width: 768px) {
             .dashboard-header {
                 flex-direction: column;
@@ -552,6 +657,11 @@
             }
 
             .bonus-form {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .date-search-form {
                 grid-template-columns: 1fr;
                 gap: 10px;
             }
@@ -600,7 +710,7 @@
                     <button id="check-out-btn" class="btn btn-large btn-danger hidden" onclick="checkOut()">Check Out</button>
                 </div>
 
-                <!-- Bonus Section for Employees -->
+                <!-- Updated Bonus Section for Employees -->
                 <div class="bonus-section">
                     <h3>💰 Daily Bonus Tracker</h3>
                     
@@ -628,9 +738,27 @@
                         <button class="btn btn-success" onclick="submitBonus()">Submit Bonus</button>
                     </div>
                     
+                    <!-- Updated bonus history with collapsible and tabs -->
                     <div id="employee-bonus-history">
-                        <h4>Your Recent Bonus Requests</h4>
-                        <div id="employee-bonus-list"></div>
+                        <div class="collapsible-header" onclick="toggleBonusHistory()">
+                            <h4>Your Bonus Requests</h4>
+                            <span class="expand-icon" id="bonus-expand-icon">▼</span>
+                        </div>
+                        
+                        <div class="collapsible-content" id="bonus-collapsible-content">
+                            <div class="bonus-tabs">
+                                <button class="bonus-tab active" onclick="showBonusTab('current')">This Week</button>
+                                <button class="bonus-tab" onclick="showBonusTab('previous')">Previous Week</button>
+                            </div>
+                            
+                            <div class="bonus-tab-content active" id="current-bonus-tab">
+                                <div id="current-week-bonus-list"></div>
+                            </div>
+                            
+                            <div class="bonus-tab-content" id="previous-bonus-tab">
+                                <div id="previous-week-bonus-list"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -762,8 +890,25 @@
                         </div>
                         
                         <div style="margin-top: 30px;">
-                            <h4>Recent Bonus History</h4>
-                            <button class="btn" onclick="loadBonusHistory()">Load Recent History</button>
+                            <h4>Bonus History</h4>
+                            
+                            <!-- NEW: Custom date search for bonus history -->
+                            <div class="custom-date-search">
+                                <h5>Search Bonus History by Date Range</h5>
+                                <div class="date-search-form">
+                                    <div class="form-group">
+                                        <label>Start Date:</label>
+                                        <input type="date" id="bonus-history-start-date">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>End Date:</label>
+                                        <input type="date" id="bonus-history-end-date">
+                                    </div>
+                                    <button class="btn" onclick="loadBonusHistoryByDate()">Search History</button>
+                                </div>
+                            </div>
+                            
+                            <button class="btn" onclick="loadBonusHistory()">Load Recent History (Last 50)</button>
                             <div id="bonus-history-content"></div>
                         </div>
                     </div>
@@ -866,6 +1011,10 @@
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             document.getElementById('custom-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
             document.getElementById('custom-end-date').value = today;
+            
+            // Set default dates for bonus history search
+            document.getElementById('bonus-history-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('bonus-history-end-date').value = today;
         }
 
         function updateDateTime() {
@@ -1454,24 +1603,89 @@
             }
         }
 
+        // NEW FUNCTIONS FOR EMPLOYEE BONUS IMPROVEMENTS
+
+        function toggleBonusHistory() {
+            const content = document.getElementById('bonus-collapsible-content');
+            const icon = document.getElementById('bonus-expand-icon');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                icon.classList.remove('expanded');
+            } else {
+                content.classList.add('show');
+                icon.classList.add('expanded');
+                // Load bonus data when expanded for the first time
+                if (!content.dataset.loaded) {
+                    loadEmployeeBonuses();
+                    content.dataset.loaded = 'true';
+                }
+            }
+        }
+
+        function showBonusTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.bonus-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.bonus-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (tab === 'current') {
+                document.getElementById('current-bonus-tab').classList.add('active');
+            } else if (tab === 'previous') {
+                document.getElementById('previous-bonus-tab').classList.add('active');
+                loadPreviousWeekBonuses();
+            }
+        }
+
+        function getWeekDates(weekOffset = 0) {
+            const now = new Date();
+            const currentWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + (weekOffset * 7));
+            const startOfWeek = new Date(currentWeek);
+            const endOfWeek = new Date(currentWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
+            
+            return {
+                start: startOfWeek.toISOString().split('T')[0],
+                end: endOfWeek.toISOString().split('T')[0]
+            };
+        }
+
         async function loadEmployeeBonuses() {
             if (!currentUserId) return;
             
             try {
+                // Get current week dates
+                const currentWeek = getWeekDates(0);
+                
                 const { data: bonuses, error } = await supabaseClient
                     .from('bonuses')
                     .select('*')
                     .eq('employee_id', currentUserId)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
+                    .gte('date', currentWeek.start)
+                    .lte('date', currentWeek.end)
+                    .order('created_at', { ascending: false });
                 
                 if (error) throw error;
+                
+                // Calculate totals across all time for summary
+                const { data: allBonuses, error: allError } = await supabaseClient
+                    .from('bonuses')
+                    .select('*')
+                    .eq('employee_id', currentUserId);
+                
+                if (allError) throw allError;
                 
                 let totalPending = 0;
                 let totalApproved = 0;
                 let totalDenied = 0;
                 
-                bonuses.forEach(bonus => {
+                allBonuses.forEach(bonus => {
                     if (bonus.status === 'pending') totalPending += bonus.amount;
                     else if (bonus.status === 'approved') totalApproved += bonus.amount;
                     else if (bonus.status === 'denied') totalDenied += bonus.amount;
@@ -1484,10 +1698,10 @@
                 document.getElementById('employee-bonus-approved').textContent = totalApproved.toFixed(2);
                 document.getElementById('employee-bonus-denied').textContent = totalDenied.toFixed(2);
                 
-                const bonusList = document.getElementById('employee-bonus-list');
+                const bonusList = document.getElementById('current-week-bonus-list');
                 
                 if (bonuses.length === 0) {
-                    bonusList.innerHTML = '<p style="color: #6c757d; text-align: center;">No bonus requests yet</p>';
+                    bonusList.innerHTML = '<p style="color: #6c757d; text-align: center;">No bonus requests this week</p>';
                     return;
                 }
                 
@@ -1499,13 +1713,17 @@
                     html += `
                         <div class="bonus-item">
                             <div class="bonus-details">
-                                <div class="bonus-amount">$${bonus.amount.toFixed(2)}</div>
+                                <div class="bonus-amount">${bonus.amount.toFixed(2)}</div>
                                 <div class="bonus-reason">${bonus.reason}</div>
                                 <div class="bonus-date">${new Date(bonus.date).toLocaleDateString()}</div>
                             </div>
-                            <span class="status-badge ${statusClass}">
-                                ${bonus.status.charAt(0).toUpperCase() + bonus.status.slice(1)}
-                            </span>
+                            <div>
+                                <span class="status-badge ${statusClass}">
+                                    ${bonus.status.charAt(0).toUpperCase() + bonus.status.slice(1)}
+                                </span>
+                                ${bonus.status === 'denied' && bonus.denial_reason ? 
+                                    `<div class="denial-reason">Reason: ${bonus.denial_reason}</div>` : ''}
+                            </div>
                         </div>
                     `;
                 });
@@ -1514,6 +1732,60 @@
                 
             } catch (error) {
                 console.error('Error loading employee bonuses:', error);
+            }
+        }
+
+        async function loadPreviousWeekBonuses() {
+            if (!currentUserId) return;
+            
+            try {
+                // Get previous week dates
+                const previousWeek = getWeekDates(-1);
+                
+                const { data: bonuses, error } = await supabaseClient
+                    .from('bonuses')
+                    .select('*')
+                    .eq('employee_id', currentUserId)
+                    .gte('date', previousWeek.start)
+                    .lte('date', previousWeek.end)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                const bonusList = document.getElementById('previous-week-bonus-list');
+                
+                if (bonuses.length === 0) {
+                    bonusList.innerHTML = '<p style="color: #6c757d; text-align: center;">No bonus requests from previous week</p>';
+                    return;
+                }
+                
+                let html = '';
+                bonuses.forEach(bonus => {
+                    const statusClass = bonus.status === 'pending' ? 'status-pending' : 
+                                       bonus.status === 'approved' ? 'status-approved' : 'status-denied';
+                    
+                    html += `
+                        <div class="bonus-item">
+                            <div class="bonus-details">
+                                <div class="bonus-amount">${bonus.amount.toFixed(2)}</div>
+                                <div class="bonus-reason">${bonus.reason}</div>
+                                <div class="bonus-date">${new Date(bonus.date).toLocaleDateString()}</div>
+                            </div>
+                            <div>
+                                <span class="status-badge ${statusClass}">
+                                    ${bonus.status.charAt(0).toUpperCase() + bonus.status.slice(1)}
+                                </span>
+                                ${bonus.status === 'denied' && bonus.denial_reason ? 
+                                    `<div class="denial-reason">Reason: ${bonus.denial_reason}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                bonusList.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading previous week bonuses:', error);
             }
         }
 
@@ -1545,7 +1817,7 @@
                     html += `
                         <div class="bonus-item">
                             <div class="bonus-details">
-                                <div class="bonus-amount">$${bonus.amount.toFixed(2)}</div>
+                                <div class="bonus-amount">${bonus.amount.toFixed(2)}</div>
                                 <div class="bonus-reason">${bonus.reason}</div>
                                 <div class="bonus-date">
                                     ${bonus.employees.name} - ${new Date(bonus.date).toLocaleDateString()}
@@ -1683,6 +1955,7 @@
                                 <th>Date</th>
                                 <th>Status</th>
                                 <th>Approved By</th>
+                                <th>Denial Reason</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1700,6 +1973,7 @@
                             <td>${new Date(bonus.date).toLocaleDateString()}</td>
                             <td><span class="status-badge ${statusClass}">${bonus.status.charAt(0).toUpperCase() + bonus.status.slice(1)}</span></td>
                             <td>${bonus.approved_by || 'N/A'}</td>
+                            <td>${bonus.denial_reason || 'N/A'}</td>
                         </tr>
                     `;
                 });
@@ -1709,6 +1983,86 @@
                 
             } catch (error) {
                 console.error('Error loading bonus history:', error);
+                showAlert('bonus-mgmt-alert', 'Error loading bonus history', 'error');
+            }
+        }
+
+        // NEW FUNCTION: Load bonus history by custom date range
+        async function loadBonusHistoryByDate() {
+            if (currentRole !== 'management') return;
+            
+            const startDate = document.getElementById('bonus-history-start-date').value;
+            const endDate = document.getElementById('bonus-history-end-date').value;
+            
+            if (!startDate || !endDate) {
+                showAlert('bonus-mgmt-alert', 'Please select both start and end dates', 'error');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                showAlert('bonus-mgmt-alert', 'Start date must be before end date', 'error');
+                return;
+            }
+            
+            try {
+                const { data: bonuses, error } = await supabaseClient
+                    .from('bonuses')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .gte('date', startDate)
+                    .lte('date', endDate)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('bonus-history-content');
+                
+                if (bonuses.length === 0) {
+                    container.innerHTML = `<p>No bonus history found for the selected date range (${startDate} to ${endDate}).</p>`;
+                    return;
+                }
+                
+                let html = `
+                    <h5>Bonus History: ${startDate} to ${endDate} (${bonuses.length} records)</h5>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Amount</th>
+                                <th>Reason</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Approved By</th>
+                                <th>Denial Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                bonuses.forEach(bonus => {
+                    const statusClass = bonus.status === 'pending' ? 'status-pending' : 
+                                       bonus.status === 'approved' ? 'status-approved' : 'status-denied';
+                    
+                    html += `
+                        <tr>
+                            <td>${bonus.employees.name}</td>
+                            <td>${bonus.amount.toFixed(2)}</td>
+                            <td>${bonus.reason}</td>
+                            <td>${new Date(bonus.date).toLocaleDateString()}</td>
+                            <td><span class="status-badge ${statusClass}">${bonus.status.charAt(0).toUpperCase() + bonus.status.slice(1)}</span></td>
+                            <td>${bonus.approved_by || 'N/A'}</td>
+                            <td>${bonus.denial_reason || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading bonus history by date:', error);
                 showAlert('bonus-mgmt-alert', 'Error loading bonus history', 'error');
             }
         }
@@ -1908,6 +2262,7 @@
             );
         }
 
+        // UPDATED: generateDateRangeReport with bonus totals
         async function generateDateRangeReport(startDate, endDate, containerId, title) {
             try {
                 const { data: absences, error } = await supabaseClient
@@ -1922,11 +2277,25 @@
                 
                 if (error) throw error;
                 
+                // NEW: Get approved bonuses for the date range
+                const { data: bonuses, error: bonusError } = await supabaseClient
+                    .from('bonuses')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .eq('status', 'approved')
+                    .gte('date', startDate)
+                    .lte('date', endDate);
+                
+                if (bonusError) throw bonusError;
+                
                 const reportData = [];
                 
                 employees.forEach(employee => {
                     let fullDaysMissed = 0;
                     let partialDaysMissed = 0;
+                    let bonusTotal = 0;
                     
                     absences.forEach(absence => {
                         if (absence.employee_id === employee.id) {
@@ -1938,10 +2307,17 @@
                         }
                     });
                     
+                    bonuses.forEach(bonus => {
+                        if (bonus.employee_id === employee.id) {
+                            bonusTotal += bonus.amount;
+                        }
+                    });
+                    
                     reportData.push({
                         employee: employee.name,
                         fullDaysMissed,
-                        partialDaysMissed
+                        partialDaysMissed,
+                        bonusTotal: bonusTotal.toFixed(2)
                     });
                 });
                 
@@ -2005,11 +2381,25 @@
                 
                 if (absenceError) throw absenceError;
                 
+                // NEW: Get approved bonuses for the date range
+                const { data: bonuses, error: bonusError } = await supabaseClient
+                    .from('bonuses')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .eq('status', 'approved')
+                    .gte('date', startDate)
+                    .lte('date', endDate);
+                
+                if (bonusError) throw bonusError;
+                
                 const hoursData = [];
                 
                 employees.forEach(employee => {
                     let totalHours = 0;
                     let daysWorked = 0;
+                    let bonusTotal = 0;
                     
                     timeEntries.forEach(entry => {
                         if (entry.employee_id === employee.id && entry.total_hours) {
@@ -2025,10 +2415,17 @@
                         }
                     });
                     
+                    bonuses.forEach(bonus => {
+                        if (bonus.employee_id === employee.id) {
+                            bonusTotal += bonus.amount;
+                        }
+                    });
+                    
                     hoursData.push({
                         employee: employee.name,
                         totalHours: totalHours.toFixed(2),
-                        daysWorked
+                        daysWorked,
+                        bonusTotal: bonusTotal.toFixed(2)
                     });
                 });
                 
@@ -2095,6 +2492,7 @@
             }
         }
 
+        // UPDATED: displayReport with bonus total column
         function displayReport(containerId, data, title) {
             const container = document.getElementById(containerId);
             
@@ -2107,6 +2505,7 @@
                             <th>Full Days Missed</th>
                             <th>Partial Days Missed</th>
                             <th>Total Days Affected</th>
+                            <th>Bonus Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2120,6 +2519,7 @@
                         <td>${row.fullDaysMissed}</td>
                         <td>${row.partialDaysMissed}</td>
                         <td>${totalAffected}</td>
+                        <td>${row.bonusTotal}</td>
                     </tr>
                 `;
             });
@@ -2128,6 +2528,7 @@
             container.innerHTML = tableHTML;
         }
 
+        // UPDATED: displayHoursReport with bonus total column
         function displayHoursReport(containerId, data, title) {
             const container = document.getElementById(containerId);
             
@@ -2140,6 +2541,7 @@
                             <th>Total Hours</th>
                             <th>Days Worked</th>
                             <th>Average Hours/Day</th>
+                            <th>Bonus Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2153,6 +2555,7 @@
                         <td>${row.totalHours}</td>
                         <td>${row.daysWorked}</td>
                         <td>${avgHours}</td>
+                        <td>${row.bonusTotal}</td>
                     </tr>
                 `;
             });
@@ -2234,6 +2637,3 @@
         }
 
         window.onload = init;
-    </script>
-</body>
-</html>
