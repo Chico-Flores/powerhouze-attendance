@@ -998,9 +998,14 @@
 
         // Initialize the application
         async function init() {
+            console.log('Initializing application...');
+            
             updateDateTime();
             setInterval(updateDateTime, 1000);
+            
+            console.log('Loading employees...');
             await loadEmployees();
+            
             setInterval(updateLiveStatus, 30000);
             setInterval(autoCheckOutDaily, 60000);
             
@@ -1015,6 +1020,8 @@
             // Set default dates for bonus history search
             document.getElementById('bonus-history-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
             document.getElementById('bonus-history-end-date').value = today;
+            
+            console.log('Application initialization complete');
         }
 
         function updateDateTime() {
@@ -1054,25 +1061,59 @@
 
         async function loadEmployees() {
             try {
+                console.log('Loading employees...');
+                
+                // Test Supabase connection first
+                const { data: testData, error: testError } = await supabaseClient
+                    .from('employees')
+                    .select('count(*)', { count: 'exact' });
+                
+                console.log('Connection test result:', { testData, testError });
+                
                 const { data, error } = await supabaseClient
                     .from('employees')
                     .select('*')
                     .order('name');
                 
-                if (error) throw error;
+                console.log('Employee query result:', { data, error });
+                
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw error;
+                }
+                
+                if (!data || data.length === 0) {
+                    console.warn('No employees found in database');
+                    showAlert('login-alert', 'No employees found in database. Please contact administrator.', 'warning');
+                    return;
+                }
                 
                 employees = data;
+                console.log('Loaded employees:', employees);
                 populateEmployeeDropdowns();
             } catch (error) {
                 console.error('Error loading employees:', error);
-                showAlert('login-alert', 'Error loading employees. Please refresh the page.', 'error');
+                console.error('Error details:', error.message, error.details, error.hint);
+                showAlert('login-alert', `Error loading employees: ${error.message}. Please check console and refresh the page.`, 'error');
+                
+                // Fallback: Try to populate with a test entry to see if the dropdown works
+                employees = [{
+                    id: 999,
+                    name: 'Test Employee (Connection Issue)',
+                    role: 'employee'
+                }];
+                populateEmployeeDropdowns();
             }
         }
 
         function populateEmployeeDropdowns() {
+            console.log('Populating dropdowns with employees:', employees);
+            
             const selects = ['employee-select', 'absence-employee', 'absence-filter-employee'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
+                console.log(`Processing select: ${selectId}`, select);
+                
                 if (select) {
                     if (selectId === 'employee-select') {
                         select.innerHTML = '<option value="">Choose your name...</option>';
@@ -1083,9 +1124,18 @@
                         }
                     }
                     
-                    employees.forEach(emp => {
-                        select.innerHTML += `<option value="${emp.id}" data-role="${emp.role}">${emp.name}</option>`;
-                    });
+                    if (employees && employees.length > 0) {
+                        employees.forEach(emp => {
+                            console.log('Adding employee to dropdown:', emp);
+                            select.innerHTML += `<option value="${emp.id}" data-role="${emp.role}">${emp.name}</option>`;
+                        });
+                        console.log(`Updated ${selectId} with ${employees.length} employees`);
+                    } else {
+                        console.warn('No employees to add to dropdown');
+                        select.innerHTML += '<option value="">No employees found</option>';
+                    }
+                } else {
+                    console.error(`Select element not found: ${selectId}`);
                 }
             });
         }
