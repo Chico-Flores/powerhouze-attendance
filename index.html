@@ -856,14 +856,12 @@
             updateDateTime();
             setInterval(updateDateTime, 1000);
             await loadEmployees();
-            setInterval(updateLiveStatus, 30000); // Update every 30 seconds
-            setInterval(autoCheckOutDaily, 60000); // Check every minute for auto checkout
+            setInterval(updateLiveStatus, 30000);
+            setInterval(autoCheckOutDaily, 60000);
             
-            // Set today's date for absence entry
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('absence-date').value = today;
             
-            // Set default dates for custom report (last 30 days)
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             document.getElementById('custom-start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
@@ -881,14 +879,12 @@
             
             document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', dateOptions);
             
-            // Employee dashboard shows local time
             const localTime = now.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit'
             });
             
-            // Management dashboard shows PST time
             const pstTime = now.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -958,7 +954,6 @@
             }
         }
 
-        // Add event listener for employee selection
         document.getElementById('employee-select').addEventListener('change', showPasswordField);
 
         async function login() {
@@ -976,14 +971,12 @@
                 return;
             }
             
-            // Check if management role requires password
             if (selectedEmployee.role === 'management') {
                 if (!passwordInput) {
                     showAlert('login-alert', 'Management password required', 'error');
                     return;
                 }
                 
-                // Verify management password
                 try {
                     const { data, error } = await supabaseClient
                         .from('app_config')
@@ -1008,7 +1001,6 @@
             currentUserId = selectedEmployee.id;
             currentRole = selectedEmployee.role;
             
-            // Set user context for RLS
             await supabaseClient.rpc('set_config', {
                 setting_name: 'app.current_user',
                 setting_value: currentUser
@@ -1045,7 +1037,6 @@
             document.getElementById('employee-dashboard').style.display = 'none';
             document.getElementById('management-dashboard').style.display = 'none';
             
-            // Reset form
             document.getElementById('employee-select').value = '';
             document.getElementById('management-password').value = '';
             document.getElementById('password-field').classList.remove('show');
@@ -1055,20 +1046,17 @@
         async function checkIn() {
             if (!currentUserId) return;
             
-            // Check if current time is within allowed hours and days (Mon-Fri, 7 AM - 4 PM PST)
             const nowPST = new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"});
             const pstTime = new Date(nowPST);
             const hours = pstTime.getHours();
-            const dayOfWeek = pstTime.getDay(); // 0 = Sunday, 6 = Saturday
+            const dayOfWeek = pstTime.getDay();
             
-            // Check for weekend
             if (dayOfWeek === 0 || dayOfWeek === 6) {
                 const dayName = dayOfWeek === 0 ? "Sunday" : "Saturday";
                 alert(`🚫 No weekend work allowed!\nYou cannot check in on ${dayName}. Enjoy your time off!\n\nNext available check-in: Monday at 7:00 AM PST`);
                 return;
             }
             
-            // Check for valid hours (7 AM - 4 PM PST)
             if (hours < 7 || hours >= 16) {
                 const nextOpenTime = hours < 7 ? "7:00 AM PST" : "7:00 AM PST tomorrow";
                 alert(`⏰ Check-in is only allowed between 7:00 AM and 4:00 PM PST.\nNext available check-in time: ${nextOpenTime}`);
@@ -1079,7 +1067,6 @@
                 const today = new Date().toISOString().split('T')[0];
                 const now = new Date().toISOString();
                 
-                // Check for existing entry today
                 let { data: existingEntry, error: fetchError } = await supabaseClient
                     .from('time_entries')
                     .select('*')
@@ -1092,7 +1079,6 @@
                 }
                 
                 if (existingEntry) {
-                    // Update existing entry - set new check-in time and clear check-out
                     const { error: updateError } = await supabaseClient
                         .from('time_entries')
                         .update({
@@ -1100,14 +1086,12 @@
                             check_out_time: null,
                             auto_closed: false,
                             updated_at: now,
-                            // Keep accumulated hours if they exist, don't reset to null
                             notes: existingEntry.notes ? `${existingEntry.notes} | Re-checked in at ${new Date(now).toLocaleTimeString()}` : `Re-checked in at ${new Date(now).toLocaleTimeString()}`
                         })
                         .eq('id', existingEntry.id);
                     
                     if (updateError) throw updateError;
                 } else {
-                    // Create new entry for first check-in of the day
                     const { error: insertError } = await supabaseClient
                         .from('time_entries')
                         .insert({
@@ -1137,7 +1121,6 @@
                 const today = new Date().toISOString().split('T')[0];
                 const now = new Date().toISOString();
                 
-                // Get today's entry
                 const { data: entry, error: fetchError } = await supabaseClient
                     .from('time_entries')
                     .select('*')
@@ -1152,15 +1135,11 @@
                     return;
                 }
                 
-                // Calculate hours worked for this session
                 const checkInTime = new Date(entry.check_in_time);
                 const checkOutTime = new Date(now);
                 const sessionHours = ((checkOutTime - checkInTime) / (1000 * 60 * 60));
-                
-                // Add to existing total hours (for multiple sessions)
                 const newTotalHours = (entry.total_hours || 0) + sessionHours;
                 
-                // Update entry with checkout
                 const { error: updateError } = await supabaseClient
                     .from('time_entries')
                     .update({
@@ -1214,12 +1193,10 @@
                 }
                 
                 if (!entry || !entry.check_in_time) {
-                    // Not checked in today
                     statusElements.status.innerHTML = '<p style="color: #e74c3c;">Not checked in today</p>';
                     statusElements.checkinBtn.classList.remove('hidden');
                     statusElements.checkoutBtn.classList.add('hidden');
                 } else if (!entry.check_out_time) {
-                    // Currently checked in
                     const checkinTime = new Date(entry.check_in_time).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -1243,7 +1220,6 @@
                     statusElements.checkinBtn.classList.add('hidden');
                     statusElements.checkoutBtn.classList.remove('hidden');
                 } else {
-                    // Checked out - show option to check back in
                     const checkinTime = new Date(entry.check_in_time).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -1287,7 +1263,6 @@
             try {
                 const today = new Date().toISOString().split('T')[0];
                 
-                // Get all time entries for today
                 const { data: timeEntries, error: timeError } = await supabaseClient
                     .from('time_entries')
                     .select(`
@@ -1298,7 +1273,6 @@
                 
                 if (timeError) throw timeError;
                 
-                // Get all absences for today
                 const { data: absences, error: absenceError } = await supabaseClient
                     .from('absences')
                     .select(`
@@ -1309,7 +1283,6 @@
                 
                 if (absenceError) throw absenceError;
 
-                // Get pending bonuses count
                 const { data: pendingBonuses, error: bonusError } = await supabaseClient
                     .from('bonuses')
                     .select('id')
@@ -1330,10 +1303,8 @@
                 let totalNotChecked = 0;
                 let totalHoursToday = 0;
                 
-                // Update pending bonuses stat
                 document.getElementById('pending-bonuses').textContent = pendingBonuses.length;
                 
-                // Create maps for quick lookup
                 const timeEntryMap = {};
                 const absenceMap = {};
                 
@@ -1353,7 +1324,6 @@
                     item.className = 'employee-item';
                     
                     if (absence) {
-                        // Employee is marked absent
                         const hoursWorked = absence.type === 'partial' ? 4 : 0;
                         totalHoursToday += hoursWorked;
                         totalAbsent++;
@@ -1369,7 +1339,6 @@
                         `;
                         absentList.appendChild(item);
                     } else if (timeEntry && timeEntry.check_in_time && !timeEntry.check_out_time) {
-                        // Employee is currently clocked in
                         totalClockedIn++;
                         const checkinTime = new Date(timeEntry.check_in_time).toLocaleTimeString('en-US', {
                             hour: '2-digit',
@@ -1386,7 +1355,6 @@
                         `;
                         clockedInList.appendChild(item);
                     } else if (timeEntry && timeEntry.check_out_time) {
-                        // Employee has completed their day
                         totalHoursToday += timeEntry.total_hours || 0;
                         const checkinTime = new Date(timeEntry.check_in_time).toLocaleTimeString('en-US', {
                             hour: '2-digit',
@@ -1413,7 +1381,6 @@
                         `;
                         clockedInList.appendChild(item);
                     } else {
-                        // Employee hasn't checked in yet
                         totalNotChecked++;
                         item.innerHTML = `
                             <div>
@@ -1426,13 +1393,11 @@
                     }
                 });
                 
-                // Update summary stats
                 document.getElementById('total-clocked-in').textContent = totalClockedIn;
                 document.getElementById('total-absent').textContent = totalAbsent;
                 document.getElementById('total-not-checked').textContent = totalNotChecked;
                 document.getElementById('total-hours-today').textContent = totalHoursToday.toFixed(1);
                 
-                // Show "No employees" message if lists are empty
                 if (clockedInList.children.length === 0) {
                     clockedInList.innerHTML = '<p style="color: #6c757d; text-align: center;">No employees currently working</p>';
                 }
@@ -1448,7 +1413,6 @@
             }
         }
 
-        // Bonus Functions
         async function submitBonus() {
             const amount = parseFloat(document.getElementById('bonus-amount').value);
             const reason = document.getElementById('bonus-reason').value.trim();
@@ -1478,7 +1442,6 @@
                 
                 if (error) throw error;
                 
-                // Clear form
                 document.getElementById('bonus-amount').value = '';
                 document.getElementById('bonus-reason').value = '';
                 
@@ -1504,7 +1467,6 @@
                 
                 if (error) throw error;
                 
-                // Calculate totals
                 let totalPending = 0;
                 let totalApproved = 0;
                 let totalDenied = 0;
@@ -1517,13 +1479,11 @@
                 
                 const totalPotential = totalPending + totalApproved;
                 
-                // Update summary
                 document.getElementById('employee-bonus-total').textContent = totalPotential.toFixed(2);
                 document.getElementById('employee-bonus-pending').textContent = totalPending.toFixed(2);
                 document.getElementById('employee-bonus-approved').textContent = totalApproved.toFixed(2);
                 document.getElementById('employee-bonus-denied').textContent = totalDenied.toFixed(2);
                 
-                // Display bonus list
                 const bonusList = document.getElementById('employee-bonus-list');
                 
                 if (bonuses.length === 0) {
@@ -1601,7 +1561,6 @@
                 
                 pendingList.innerHTML = html;
                 
-                // Update bonus stats
                 await updateBonusStats();
                 
             } catch (error) {
@@ -1665,7 +1624,6 @@
                 startOfMonth.setDate(1);
                 const monthStart = startOfMonth.toISOString().split('T')[0];
                 
-                // Get approved bonuses for today
                 const { data: todayApproved, error: todayError } = await supabaseClient
                     .from('bonuses')
                     .select('amount')
@@ -1674,7 +1632,6 @@
                 
                 if (todayError) throw todayError;
                 
-                // Get all approved bonuses for this month
                 const { data: monthApproved, error: monthError } = await supabaseClient
                     .from('bonuses')
                     .select('amount')
@@ -1755,3 +1712,528 @@
                 showAlert('bonus-mgmt-alert', 'Error loading bonus history', 'error');
             }
         }
+
+        async function addAbsence() {
+            const employeeId = document.getElementById('absence-employee').value;
+            const date = document.getElementById('absence-date').value;
+            const type = document.getElementById('absence-type').value;
+            const reason = document.getElementById('absence-reason').value;
+            
+            if (!employeeId || !date || !type) {
+                showAlert('absence-alert', 'Please fill in employee, date, and absence type', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('absences')
+                    .upsert({
+                        employee_id: parseInt(employeeId),
+                        date: date,
+                        type: type,
+                        reason: reason,
+                        entered_by: currentUser
+                    });
+                
+                if (error) throw error;
+                
+                document.getElementById('absence-employee').value = '';
+                document.getElementById('absence-type').value = '';
+                document.getElementById('absence-reason').value = '';
+                
+                const employeeName = employees.find(e => e.id == employeeId)?.name;
+                showAlert('absence-alert', `Absence recorded for ${employeeName} on ${date}`, 'success');
+                
+                await updateLiveStatus();
+                
+            } catch (error) {
+                console.error('Error adding absence:', error);
+                showAlert('absence-alert', 'Error recording absence. Please try again.', 'error');
+            }
+        }
+
+        async function loadExistingAbsences() {
+            try {
+                const { data: absences, error } = await supabaseClient
+                    .from('absences')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .order('date', { ascending: false })
+                    .limit(50);
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('existing-absences');
+                if (absences.length === 0) {
+                    container.innerHTML = '<p>No absences found.</p>';
+                    return;
+                }
+                
+                let html = '<h4>Recent Absences (Edit/Delete)</h4><table class="report-table"><thead><tr><th>Employee</th><th>Date</th><th>Type</th><th>Reason</th><th>Actions</th></tr></thead><tbody>';
+                
+                absences.forEach(absence => {
+                    html += `
+                        <tr>
+                            <td>${absence.employees.name}</td>
+                            <td>${new Date(absence.date).toLocaleDateString()}</td>
+                            <td>${absence.type === 'full' ? 'Full Day' : 'Partial Day'}</td>
+                            <td>${absence.reason || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-warning" onclick="editAbsence(${absence.id}, '${absence.date}', '${absence.type}', '${absence.reason || ''}')">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteAbsence(${absence.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading existing absences:', error);
+                showAlert('absence-alert', 'Error loading absences', 'error');
+            }
+        }
+
+        async function editAbsence(id, date, type, reason) {
+            const newReason = prompt('Edit reason:', reason);
+            if (newReason === null) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('absences')
+                    .update({
+                        reason: newReason,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                showAlert('absence-alert', 'Absence updated successfully', 'success');
+                await loadExistingAbsences();
+                await updateLiveStatus();
+                
+            } catch (error) {
+                console.error('Error updating absence:', error);
+                showAlert('absence-alert', 'Error updating absence', 'error');
+            }
+        }
+
+        async function deleteAbsence(id) {
+            if (!confirm('Are you sure you want to delete this absence record?')) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('absences')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                showAlert('absence-alert', 'Absence deleted successfully', 'success');
+                await loadExistingAbsences();
+                await updateLiveStatus();
+                
+            } catch (error) {
+                console.error('Error deleting absence:', error);
+                showAlert('absence-alert', 'Error deleting absence', 'error');
+            }
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'bonus-management') {
+                loadPendingBonuses();
+            }
+        }
+
+        async function generateWeeklyReport() {
+            const today = new Date();
+            const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+            const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
+            
+            await generateDateRangeReport(
+                startOfWeek.toISOString().split('T')[0],
+                endOfWeek.toISOString().split('T')[0],
+                'weekly-report-content',
+                'This Week\'s Attendance Report'
+            );
+        }
+
+        async function generateMonthlyReport() {
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            await generateDateRangeReport(
+                startOfMonth.toISOString().split('T')[0],
+                endOfMonth.toISOString().split('T')[0],
+                'monthly-report-content',
+                'This Month\'s Attendance Report'
+            );
+        }
+
+        async function generateCustomReport() {
+            const startDate = document.getElementById('custom-start-date').value;
+            const endDate = document.getElementById('custom-end-date').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('Start date must be before end date');
+                return;
+            }
+            
+            await generateDateRangeReport(
+                startDate,
+                endDate,
+                'custom-report-content',
+                `Custom Report (${startDate} to ${endDate})`
+            );
+        }
+
+        async function generateDateRangeReport(startDate, endDate, containerId, title) {
+            try {
+                const { data: absences, error } = await supabaseClient
+                    .from('absences')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .gte('date', startDate)
+                    .lte('date', endDate)
+                    .order('date');
+                
+                if (error) throw error;
+                
+                const reportData = [];
+                
+                employees.forEach(employee => {
+                    let fullDaysMissed = 0;
+                    let partialDaysMissed = 0;
+                    
+                    absences.forEach(absence => {
+                        if (absence.employee_id === employee.id) {
+                            if (absence.type === 'full') {
+                                fullDaysMissed++;
+                            } else if (absence.type === 'partial') {
+                                partialDaysMissed++;
+                            }
+                        }
+                    });
+                    
+                    reportData.push({
+                        employee: employee.name,
+                        fullDaysMissed,
+                        partialDaysMissed
+                    });
+                });
+                
+                displayReport(containerId, reportData, title);
+                
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Error generating report. Please try again.');
+            }
+        }
+
+        async function generateHoursReport() {
+            const reportType = document.getElementById('hours-report-type').value;
+            let startDate, endDate, title;
+            
+            const today = new Date();
+            
+            switch (reportType) {
+                case 'today':
+                    startDate = endDate = today.toISOString().split('T')[0];
+                    title = 'Today\'s Hours Report';
+                    break;
+                case 'week':
+                    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+                    const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
+                    startDate = startOfWeek.toISOString().split('T')[0];
+                    endDate = endOfWeek.toISOString().split('T')[0];
+                    title = 'This Week\'s Hours Report';
+                    break;
+                case 'month':
+                    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    startDate = startOfMonth.toISOString().split('T')[0];
+                    endDate = endOfMonth.toISOString().split('T')[0];
+                    title = 'This Month\'s Hours Report';
+                    break;
+            }
+            
+            try {
+                const { data: timeEntries, error: timeError } = await supabaseClient
+                    .from('time_entries')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .gte('date', startDate)
+                    .lte('date', endDate)
+                    .order('date');
+                
+                if (timeError) throw timeError;
+                
+                const { data: absences, error: absenceError } = await supabaseClient
+                    .from('absences')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .eq('type', 'partial')
+                    .gte('date', startDate)
+                    .lte('date', endDate);
+                
+                if (absenceError) throw absenceError;
+                
+                const hoursData = [];
+                
+                employees.forEach(employee => {
+                    let totalHours = 0;
+                    let daysWorked = 0;
+                    
+                    timeEntries.forEach(entry => {
+                        if (entry.employee_id === employee.id && entry.total_hours) {
+                            totalHours += entry.total_hours;
+                            daysWorked++;
+                        }
+                    });
+                    
+                    absences.forEach(absence => {
+                        if (absence.employee_id === employee.id) {
+                            totalHours += 4;
+                            daysWorked++;
+                        }
+                    });
+                    
+                    hoursData.push({
+                        employee: employee.name,
+                        totalHours: totalHours.toFixed(2),
+                        daysWorked
+                    });
+                });
+                
+                displayHoursReport('hours-report-content', hoursData, title);
+                
+            } catch (error) {
+                console.error('Error generating hours report:', error);
+                alert('Error generating hours report. Please try again.');
+            }
+        }
+
+        async function filterPastAbsences() {
+            const filterDate = document.getElementById('absence-filter-date').value;
+            const filterEmployeeId = document.getElementById('absence-filter-employee').value;
+            
+            try {
+                let query = supabaseClient
+                    .from('absences')
+                    .select(`
+                        *,
+                        employees (name)
+                    `)
+                    .order('date', { ascending: false });
+                
+                if (filterDate) {
+                    query = query.eq('date', filterDate);
+                }
+                
+                if (filterEmployeeId) {
+                    query = query.eq('employee_id', parseInt(filterEmployeeId));
+                }
+                
+                const { data: absences, error } = await query.limit(100);
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('past-absences-content');
+                
+                if (absences.length === 0) {
+                    container.innerHTML = '<p>No absences found for the selected criteria.</p>';
+                    return;
+                }
+                
+                let html = '<table class="report-table"><thead><tr><th>Employee</th><th>Date</th><th>Type</th><th>Reason</th><th>Entered By</th></tr></thead><tbody>';
+                
+                absences.forEach(absence => {
+                    html += `
+                        <tr>
+                            <td>${absence.employees.name}</td>
+                            <td>${new Date(absence.date).toLocaleDateString()}</td>
+                            <td>${absence.type === 'full' ? 'Full Day' : 'Partial Day'}</td>
+                            <td>${absence.reason || 'N/A'}</td>
+                            <td>${absence.entered_by}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error filtering past absences:', error);
+                alert('Error loading past absences. Please try again.');
+            }
+        }
+
+        function displayReport(containerId, data, title) {
+            const container = document.getElementById(containerId);
+            
+            let tableHTML = `
+                <h4>${title}</h4>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Full Days Missed</th>
+                            <th>Partial Days Missed</th>
+                            <th>Total Days Affected</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.forEach(row => {
+                const totalAffected = row.fullDaysMissed + row.partialDaysMissed;
+                tableHTML += `
+                    <tr>
+                        <td>${row.employee}</td>
+                        <td>${row.fullDaysMissed}</td>
+                        <td>${row.partialDaysMissed}</td>
+                        <td>${totalAffected}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function displayHoursReport(containerId, data, title) {
+            const container = document.getElementById(containerId);
+            
+            let tableHTML = `
+                <h4>${title}</h4>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Total Hours</th>
+                            <th>Days Worked</th>
+                            <th>Average Hours/Day</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.forEach(row => {
+                const avgHours = row.daysWorked > 0 ? (row.totalHours / row.daysWorked).toFixed(2) : '0.00';
+                tableHTML += `
+                    <tr>
+                        <td>${row.employee}</td>
+                        <td>${row.totalHours}</td>
+                        <td>${row.daysWorked}</td>
+                        <td>${avgHours}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        async function autoCheckOutDaily() {
+            const now = new Date();
+            const pstTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+            const hours = pstTime.getHours();
+            const minutes = pstTime.getMinutes();
+            
+            if (hours !== 16 || minutes !== 10) return;
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                
+                const { data: openEntries, error } = await supabaseClient
+                    .from('time_entries')
+                    .select('*')
+                    .eq('date', today)
+                    .not('check_in_time', 'is', null)
+                    .is('check_out_time', null);
+                
+                if (error) throw error;
+                
+                if (openEntries.length > 0) {
+                    const autoCheckOutTime = new Date().toISOString();
+                    
+                    for (const entry of openEntries) {
+                        const checkInTime = new Date(entry.check_in_time);
+                        const checkOutTime = new Date(autoCheckOutTime);
+                        const sessionHours = ((checkOutTime - checkInTime) / (1000 * 60 * 60));
+                        const newTotalHours = (entry.total_hours || 0) + sessionHours;
+                        
+                        await supabaseClient
+                            .from('time_entries')
+                            .update({
+                                check_out_time: autoCheckOutTime,
+                                total_hours: parseFloat(newTotalHours.toFixed(2)),
+                                auto_closed: true,
+                                notes: entry.notes ? `${entry.notes} | Auto-closed at 4:10 PM PST` : 'Auto-closed at 4:10 PM PST',
+                                updated_at: autoCheckOutTime
+                            })
+                            .eq('id', entry.id);
+                    }
+                    
+                    console.log(`Auto-checked out ${openEntries.length} employees at 4:10 PM PST`);
+                    
+                    if (currentRole === 'management') {
+                        await updateLiveStatus();
+                    }
+                    
+                    if (currentUserId) {
+                        await updateCheckInStatus();
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error during auto checkout:', error);
+            }
+        }
+
+        function showAlert(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            const alertClass = type === 'error' ? 'alert-error' : type === 'success' ? 'alert-success' : 'alert-warning';
+            container.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            
+            setTimeout(() => clearAlert(containerId), 5000);
+        }
+
+        function clearAlert(containerId) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = '';
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
