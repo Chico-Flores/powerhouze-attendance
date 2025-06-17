@@ -687,8 +687,8 @@
                     </select>
                 </div>
                 <div class="form-group password-field" id="password-field">
-                    <label for="management-password">Management Password:</label>
-                    <input type="password" id="management-password" placeholder="Enter management password">
+                    <label for="role-password" id="password-label">Password:</label>
+                    <input type="password" id="role-password" placeholder="Enter password">
                 </div>
                 <button class="btn btn-large" onclick="login()" id="login-btn">Login</button>
             </div>
@@ -1072,13 +1072,27 @@
         function showPasswordField() {
             const select = document.getElementById('employee-select');
             const passwordField = document.getElementById('password-field');
+            const passwordLabel = document.getElementById('password-label');
             const selectedOption = select.options[select.selectedIndex];
             
-            if (selectedOption && selectedOption.dataset.role === 'management') {
-                passwordField.classList.add('show');
+            if (selectedOption && selectedOption.dataset.role) {
+                const role = selectedOption.dataset.role;
+                
+                if (role === 'management') {
+                    passwordField.classList.add('show');
+                    passwordLabel.textContent = 'Management Password:';
+                    document.getElementById('role-password').placeholder = 'Enter management password';
+                } else if (role === 'closer') {
+                    passwordField.classList.add('show');
+                    passwordLabel.textContent = 'Closer Password:';
+                    document.getElementById('role-password').placeholder = 'Enter closer password';
+                } else {
+                    passwordField.classList.remove('show');
+                    document.getElementById('role-password').value = '';
+                }
             } else {
                 passwordField.classList.remove('show');
-                document.getElementById('management-password').value = '';
+                document.getElementById('role-password').value = '';
             }
         }
 
@@ -1086,7 +1100,7 @@
 
         async function login() {
             const employeeId = document.getElementById('employee-select').value;
-            const passwordInput = document.getElementById('management-password').value;
+            const passwordInput = document.getElementById('role-password').value;
             
             if (!employeeId) {
                 showAlert('login-alert', 'Please select your name', 'error');
@@ -1099,23 +1113,33 @@
                 return;
             }
             
-            if (selectedEmployee.role === 'management') {
+            // Check if password is required for this role
+            if (selectedEmployee.role === 'management' || selectedEmployee.role === 'closer') {
                 if (!passwordInput) {
-                    showAlert('login-alert', 'Management password required', 'error');
+                    const roleText = selectedEmployee.role === 'management' ? 'Management' : 'Closer';
+                    showAlert('login-alert', `${roleText} password required`, 'error');
                     return;
                 }
                 
                 try {
+                    // Get the appropriate password from database
+                    const passwordKey = selectedEmployee.role === 'management' ? 'management_password' : 'closer_password';
+                    
                     const { data, error } = await supabaseClient
                         .from('app_config')
                         .select('value')
-                        .eq('key', 'management_password')
+                        .eq('key', passwordKey)
                         .single();
                     
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Password lookup error:', error);
+                        showAlert('login-alert', 'Error verifying password. Please contact administrator.', 'error');
+                        return;
+                    }
                     
                     if (passwordInput !== data.value) {
-                        showAlert('login-alert', 'Incorrect management password', 'error');
+                        const roleText = selectedEmployee.role === 'management' ? 'management' : 'closer';
+                        showAlert('login-alert', `Incorrect ${roleText} password`, 'error');
                         return;
                     }
                 } catch (error) {
@@ -1166,7 +1190,7 @@
             document.getElementById('management-dashboard').style.display = 'none';
             
             document.getElementById('employee-select').value = '';
-            document.getElementById('management-password').value = '';
+            document.getElementById('role-password').value = '';
             document.getElementById('password-field').classList.remove('show');
             clearAlert('login-alert');
         }
