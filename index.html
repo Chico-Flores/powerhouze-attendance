@@ -1198,10 +1198,9 @@
         async function checkIn() {
             if (!currentUserId) return;
             
-            const nowPST = new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"});
-            const pstTime = new Date(nowPST);
-            const hours = pstTime.getHours();
-            const dayOfWeek = pstTime.getDay();
+            const nowPST = getCurrentPSTTime();
+            const hours = nowPST.getHours();
+            const dayOfWeek = nowPST.getDay();
             
             if (dayOfWeek === 0 || dayOfWeek === 6) {
                 const dayName = dayOfWeek === 0 ? "Sunday" : "Saturday";
@@ -1216,8 +1215,7 @@
             }
             
             try {
-                const today = new Date().toISOString().split('T')[0];
-                const now = new Date().toISOString();
+                const today = getCurrentPSTDate();
                 
                 let { data: existingEntry, error: fetchError } = await supabaseClient
                     .from('time_entries')
@@ -1234,11 +1232,11 @@
                     const { error: updateError } = await supabaseClient
                         .from('time_entries')
                         .update({
-                            check_in_time: now,
+                            check_in_time: nowPST,
                             check_out_time: null,
                             auto_closed: false,
-                            updated_at: now,
-                            notes: existingEntry.notes ? `${existingEntry.notes} | Re-checked in at ${new Date(now).toLocaleTimeString()}` : `Re-checked in at ${new Date(now).toLocaleTimeString()}`
+                            updated_at: nowPST,
+                            notes: existingEntry.notes ? `${existingEntry.notes} | Re-checked in at ${nowPST.toLocaleTimeString()}` : `Re-checked in at ${nowPST.toLocaleTimeString()}`
                         })
                         .eq('id', existingEntry.id);
                     
@@ -1249,7 +1247,7 @@
                         .insert({
                             employee_id: currentUserId,
                             date: today,
-                            check_in_time: now
+                            check_in_time: nowPST
                         });
                     
                     if (insertError) throw insertError;
@@ -1270,8 +1268,7 @@
             if (!currentUserId) return;
             
             try {
-                const today = new Date().toISOString().split('T')[0];
-                const now = new Date().toISOString();
+                const today = getCurrentPSTDate();
                 
                 const { data: entry, error: fetchError } = await supabaseClient
                     .from('time_entries')
@@ -1288,17 +1285,17 @@
                 }
                 
                 const checkInTime = new Date(entry.check_in_time);
-                const checkOutTime = new Date(now);
+                const checkOutTime = getCurrentPSTTime();
                 const sessionHours = ((checkOutTime - checkInTime) / (1000 * 60 * 60));
                 const newTotalHours = (entry.total_hours || 0) + sessionHours;
                 
                 const { error: updateError } = await supabaseClient
                     .from('time_entries')
                     .update({
-                        check_out_time: now,
+                        check_out_time: checkOutTime,
                         total_hours: parseFloat(newTotalHours.toFixed(2)),
-                        updated_at: now,
-                        notes: entry.notes ? `${entry.notes} | Checked out at ${new Date(now).toLocaleTimeString()}` : `Checked out at ${new Date(now).toLocaleTimeString()}`
+                        updated_at: checkOutTime,
+                        notes: entry.notes ? `${entry.notes} | Checked out at ${checkOutTime.toLocaleTimeString()}` : `Checked out at ${checkOutTime.toLocaleTimeString()}`
                     })
                     .eq('id', entry.id);
                 
@@ -1319,7 +1316,7 @@
             if (!currentUserId) return;
             
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getCurrentPSTDate();
                 
                 const { data: entry, error } = await supabaseClient
                     .from('time_entries')
@@ -1413,7 +1410,7 @@
             if (currentRole !== 'management') return;
             
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getCurrentPSTDate();
                 
                 const { data: timeEntries, error: timeError } = await supabaseClient
                     .from('time_entries')
@@ -1580,7 +1577,7 @@
             }
             
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getCurrentPSTDate();
                 
                 const { error } = await supabaseClient
                     .from('bonuses')
@@ -1850,7 +1847,7 @@
                     .update({
                         status: 'approved',
                         approved_by: currentUser,
-                        approved_at: new Date().toISOString()
+                        approved_at: getCurrentPSTDate()
                     })
                     .eq('id', bonusId);
                 
@@ -1874,7 +1871,7 @@
                     .update({
                         status: 'denied',
                         approved_by: currentUser,
-                        approved_at: new Date().toISOString(),
+                        approved_at: getCurrentPSTDate(),
                         denial_reason: reason
                     })
                     .eq('id', bonusId);
@@ -1894,7 +1891,7 @@
             if (currentRole !== 'management') return;
             
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getCurrentPSTDate();
                 const startOfMonth = new Date();
                 startOfMonth.setDate(1);
                 const monthStart = startOfMonth.toISOString().split('T')[0];
@@ -2162,7 +2159,7 @@
                     .from('absences')
                     .update({
                         reason: newReason,
-                        updated_at: new Date().toISOString()
+                        updated_at: getCurrentPSTDate()
                     })
                     .eq('id', id);
                 
@@ -2563,14 +2560,14 @@
 
         async function autoCheckOutDaily() {
             const now = new Date();
-            const pstTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+            const pstTime = getCurrentPSTTime();
             const hours = pstTime.getHours();
             const minutes = pstTime.getMinutes();
             
             if (hours !== 16 || minutes !== 10) return;
             
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getCurrentPSTDate();
                 
                 const { data: openEntries, error } = await supabaseClient
                     .from('time_entries')
@@ -2582,11 +2579,11 @@
                 if (error) throw error;
                 
                 if (openEntries.length > 0) {
-                    const autoCheckOutTime = new Date().toISOString();
+                    const autoCheckOutTime = getCurrentPSTTime();
                     
                     for (const entry of openEntries) {
                         const checkInTime = new Date(entry.check_in_time);
-                        const checkOutTime = new Date(autoCheckOutTime);
+                        const checkOutTime = autoCheckOutTime;
                         const sessionHours = ((checkOutTime - checkInTime) / (1000 * 60 * 60));
                         const newTotalHours = (entry.total_hours || 0) + sessionHours;
                         
@@ -2680,6 +2677,17 @@
         }
 
         window.onload = init;
+
+        // --- PST TIMEZONE HELPERS (added) ---
+        function getCurrentPSTDate() {
+            const now = new Date();
+            const pstDate = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+            return pstDate.toISOString().split('T')[0];
+        }
+        function getCurrentPSTTime() {
+            const now = new Date();
+            return new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+        }
     </script>
 </body>
 </html>
